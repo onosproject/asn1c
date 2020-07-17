@@ -1,6 +1,6 @@
-RectangleModule DEFINITIONS ::= BEGIN
+RectangleModuleWithConstraints DEFINITIONS ::= BEGIN
 	Rectangle ::= SEQUENCE {
-		height INTEGER,
-		width INTEGER
+		height INTEGER (0..100), --Value range constraint
+		width INTEGER (0..MAX) --Makes width non-negative
 	}
 END
