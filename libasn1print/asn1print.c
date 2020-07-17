@@ -188,8 +188,9 @@ asn1print_module(asn1p_t *asn, asn1p_module_t *mod, enum asn1print_flags flags) 
 		safe_printf("// %s ", mod->ModuleName);
 
 		if(mod->source_file_name
-		&& strcmp(mod->source_file_name, "-"))
-			safe_printf("generated from in %s\n", mod->source_file_name);
+		&& strcmp(mod->source_file_name, "-")) {
+			safe_printf("generated from in %s\n", strrchr(mod->source_file_name, '/'));
+		}
 		safe_printf("\n");
 
 		safe_printf("syntax = \"proto3\";\n\n");
