@@ -200,7 +200,7 @@ asn1print_module(asn1p_t *asn, asn1p_module_t *mod, enum asn1print_flags flags) 
 		free(moduleNameLc);
 
 		TQ_FOR(tc, &(mod->members), next) {
-			asn1print_expr_proto(asn, mod, tc, flags, 0);
+			asn1print_expr_proto(asn, mod, tc, (enum asn1print_flags2)flags, 0);
 		}
 
 		return 0;
