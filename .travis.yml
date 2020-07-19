@@ -16,3 +16,4 @@ after_success:
   - test "x$CC" = "xgcc" -o "x$CC" = "xclang" && make code-coverage-capture && coveralls-lcov asn1c-*-coverage.info
 after_failure:
   - find . -name test-suite.log -exec tail -v -n +1 {} +
+  - find . -name check-parsing.sh.log -exec tail -v -n +1 {} +
