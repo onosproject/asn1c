@@ -256,7 +256,6 @@ void toUppercase(char *mixedCase) {
 // Create new string with in upper case. Caller must free
 char* toUppercaseDup(char *mixedCase) {
 	char *mixedCaseDup = strdup(mixedCase);
-	int i = 0;
 	toUppercase(mixedCaseDup);
 	return mixedCaseDup;
 }

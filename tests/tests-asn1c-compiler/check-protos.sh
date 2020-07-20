@@ -17,22 +17,32 @@ print_status() {
     fi
 }
 
+cat << EOF > prototool.yaml
+protoc:
+  version: 3.11.0
+lint:
+  group: google
+EOF
+
 trap print_status EXIT
 
 top_srcdir="${top_srcdir:-../..}"
 top_builddir="${top_builddir:-../..}"
 
 for ref in ${top_srcdir}/tests/tests-asn1c-compiler/*.asn1.-B; do
-	refproto=${ref/%"-B"/"proto"}
-	cp ${ref} ${refproto}
+	reffilename=${ref##*/}
+	refproto=${reffilename/%"-B"/"proto"}
 	echo "Compiling protobuf ${refproto} into ${top_builddir}"
+	cp ${ref} ${refproto}
 	ec=0
 	prototool lint ${refproto} || ec=$?
 	if [ $ec != 0 ]; then
 		LAST_FAILED="$ref (from $src)"
 		finalExitCode=$ec
 	fi
-	rm ${refproto}
+	rm -f ${refproto}
 done
+
+rm -f prototool.yaml
 
 exit $finalExitCode
