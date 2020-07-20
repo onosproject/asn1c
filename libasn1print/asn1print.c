@@ -194,8 +194,7 @@ asn1print_module(asn1p_t *asn, asn1p_module_t *mod, enum asn1print_flags flags) 
 		safe_printf("\n");
 
 		safe_printf("syntax = \"proto3\";\n\n");
-		char *moduleNameLc;
-		toLowercase(mod->ModuleName, &moduleNameLc);
+		char *moduleNameLc = toLowercaseDup(mod->ModuleName);
 		safe_printf("package %s;\n\n", moduleNameLc);
 		free(moduleNameLc);
 

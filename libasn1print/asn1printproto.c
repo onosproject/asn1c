@@ -120,8 +120,12 @@ asn1print_expr_proto(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *expr, enum
 			} else if (se->expr_type == ASN_CONSTR_SEQUENCE_OF) {
 				INDENT("repeated ");
 				safe_printf("TODO find reference ");
-			} else if (se->expr_type == A1TC_UNIVERVAL) {
-				INDENT("%s_%s", expr->Identifier, se->Identifier);
+			} else if (se->expr_type == A1TC_UNIVERVAL) { // for enum values
+				char *exprUc = toUppercaseDup(expr->Identifier);
+				char *seUc = toUppercaseDup(se->Identifier);
+				INDENT("%s_%s", exprUc, seUc);
+				free(exprUc);
+				free(seUc);
 				if (se->value->type == ATV_INTEGER) {
 					safe_printf(" = %d;\n", se->value->value.v_integer);
 					continue;
@@ -224,13 +228,35 @@ asn1print_expr_proto(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *expr, enum
 	return 0;
 }
 
-// The caller must free the calloc'd value
-int toLowercase(char *mixedCase, char **lowerCase) {
-	*lowerCase = (char *)calloc(strlen(mixedCase), sizeof(char));
+// Replace any upper case chars with lower
+void toLowercase(char *mixedCase) {
 	int i = 0;
 	while(mixedCase[i]) {
-		(*lowerCase)[i] = tolower(mixedCase[i]);
+		(mixedCase)[i] = tolower(mixedCase[i]);
 		i++;
 	}
-	return i;
+}
+
+// Create new string with in lower case. Caller must free
+char* toLowercaseDup(char *mixedCase) {
+	char *mixedCaseDup = strdup(mixedCase);
+	toLowercase(mixedCaseDup);
+	return mixedCaseDup;
+}
+
+// Replace any lower case chars with upper
+void toUppercase(char *mixedCase) {
+	int i = 0;
+	while(mixedCase[i]) {
+		(mixedCase)[i] = toupper(mixedCase[i]);
+		i++;
+	}
+}
+
+// Create new string with in upper case. Caller must free
+char* toUppercaseDup(char *mixedCase) {
+	char *mixedCaseDup = strdup(mixedCase);
+	int i = 0;
+	toUppercase(mixedCaseDup);
+	return mixedCaseDup;
 }
