@@ -7,6 +7,8 @@ syntax = "proto3";
 
 package moduletestenum1;
 
+// import "validate/validate.proto";
+
 enum Enum1 {
     ENUM1_RED = 0;
     ENUM1_GREEN = 1;

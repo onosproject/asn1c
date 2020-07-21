@@ -22,6 +22,8 @@
 
 #include <asn1parser.h>
 #include <asn1fix_export.h>
+#include <asn1p_value.h>
+#include <asn1p_integer.h>
 
 #include "asn1printproto.h"
 
@@ -72,17 +74,6 @@ asn1print_expr_proto(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *expr, enum
 		// A dummy placeholder to avoid coverage errors
 	}
 
-	switch(expr->meta_type) {
-	case AMT_TYPE:
-	case AMT_OBJECTCLASS:
-	case AMT_TYPEREF:
-		break;
-	default:
-		if(expr->expr_type == A1TC_UNIVERVAL)
-			break;
-		return 0;
-	}
-
 	if(!expr->Identifier) return 0;
 
 	if(flags & APF_LINE_COMMENTS2)
@@ -90,6 +81,30 @@ asn1print_expr_proto(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *expr, enum
 
 	if (expr->expr_type == ASN_BASIC_ENUMERATED) {
 		INDENT("enum %s {\n", expr->Identifier);
+	} else if (expr->expr_type == ASN_BASIC_INTEGER && expr->meta_type == AMT_VALUE) {
+		INDENT("// int32 %s = 1 [(validate.rules).int32.const =", expr->Identifier);
+		safe_printf(" %d];\n", expr->value->value.v_integer);
+		return 0;
+	} else if (expr->expr_type == ASN_BASIC_INTEGER && expr->meta_type == AMT_VALUESET) {
+		INDENT("// int32 %s = 1 [(validate.rules).int32 = {in: [", expr->Identifier);
+		if (expr->constraints != NULL && expr->constraints->elements) {
+			struct asn1p_constraint_s *elements = *(expr->constraints->elements);
+			safe_printf("%d", elements->value->value.v_integer);
+			// TODO walk through the range of integers - like test 7 SameInterval
+		}
+		safe_printf("]}];\n");
+		return 0;
+	} else if (expr->expr_type == ASN_BASIC_INTEGER && expr->meta_type == AMT_TYPE) {
+		INDENT("// int32 %s = 1 [(validate.rules).int32 = {", expr->Identifier);
+		if (expr->constraints != NULL && expr->constraints->elements) {
+			struct asn1p_constraint_s *elements = *(expr->constraints->elements);
+			safe_printf("gte: %d, ", elements->range_start->value.v_integer);
+			safe_printf("lte: %d}];\n", elements->range_stop->value.v_integer);
+		} else {
+			safe_printf("}];\n");
+		}
+		// TODO handle sub-elements like for test 07 Reason
+		return 0;
 	} else if(expr->expr_type == A1TC_REFERENCE) {
 		se = WITH_MODULE_NAMESPACE(expr->module, expr_ns, asn1f_find_terminal_type_ex(asn, expr_ns, expr));
 		if(!se) {
@@ -160,53 +175,8 @@ asn1print_expr_proto(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *expr, enum
 		if(expr->expr_type == ASN_CONSTR_SET)
 			safe_printf("*");
 
-	} else {
-		switch(expr->expr_type) {
-
-		case ASN_BASIC_BOOLEAN:
-			safe_printf(" (true|false)");
-			break;
-		case ASN_CONSTR_CHOICE:
-		case ASN_CONSTR_SET:
-		case ASN_CONSTR_SET_OF:
-		case ASN_CONSTR_SEQUENCE:
-		case ASN_CONSTR_SEQUENCE_OF:
-		case ASN_BASIC_NULL:
-		case A1TC_UNIVERVAL:
-			safe_printf(" EMPTY");
-			break;
-		case ASN_TYPE_ANY:
-			safe_printf(" ANY");
-			break;
-		case ASN_BASIC_INTEGER:
-			safe_printf(" int32");
-			break;
-		case ASN_BASIC_BIT_STRING:
-		case ASN_BASIC_OCTET_STRING:
-		case ASN_BASIC_OBJECT_IDENTIFIER:
-		case ASN_BASIC_RELATIVE_OID:
-		case ASN_BASIC_UTCTime:
-		case ASN_BASIC_GeneralizedTime:
-		case ASN_STRING_NumericString:
-		case ASN_STRING_PrintableString:
-			safe_printf(" (#PCDATA)");
-			break;
-		case ASN_STRING_VisibleString:
-		case ASN_STRING_ISO646String:
-			/* Entity references, but not XML elements may be present */
-			safe_printf(" string");
-			break;
-		case ASN_BASIC_REAL:		/* e.g. <MINUS-INFINITY/> */
-		case ASN_BASIC_ENUMERATED:	/* e.g. <enumIdentifier1/> */
-		default:
-			/*
-			 * XML elements are allowed.
-			 * For example, a UTF8String may contain "<bel/>".
-			 */
-			safe_printf(" ANY");
-		}
-		safe_printf(" value = %d;\n", ++index);
 	}
+
 	level--;
 	if (expr->expr_type == ASN_CONSTR_CHOICE) {
 		INDENT("}\n");
