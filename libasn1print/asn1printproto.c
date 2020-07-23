@@ -81,10 +81,22 @@ asn1print_expr_proto(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *expr, enum
 
 	if (expr->expr_type == ASN_BASIC_ENUMERATED) {
 		INDENT("enum %s {\n", expr->Identifier);
-	} else if (expr->expr_type == ASN_BASIC_INTEGER && expr->meta_type == AMT_VALUE) {
-		INDENT("// int32 %s = 1 [(validate.rules).int32.const =", expr->Identifier);
-		safe_printf(" %d];\n", expr->value->value.v_integer);
-		return 0;
+	} else if (expr->meta_type == AMT_VALUE) {
+		if (expr->expr_type == ASN_BASIC_INTEGER) {
+			INDENT("// int32 %s = 1 [(validate.rules).int32.const =", expr->Identifier);
+			safe_printf(" %d];\n", expr->value->value.v_integer);
+			return 0;
+		} else if(expr->expr_type == A1TC_REFERENCE) {
+			switch (expr->value->type) {
+			case 4: // INTEGER
+				INDENT("// int32 %s = 1 [(validate.rules).int32.const = ", expr->Identifier);
+				safe_printf(" %d];\n", expr->value->value.v_integer);
+				break;
+			default:
+				INDENT("// Error");
+			}
+			return 0;
+		}
 	} else if (expr->expr_type == ASN_BASIC_INTEGER && expr->meta_type == AMT_VALUESET) {
 		INDENT("// int32 %s = 1 [(validate.rules).int32 = {in: [", expr->Identifier);
 		if (expr->constraints != NULL && expr->constraints->elements) {
