@@ -27,8 +27,12 @@ enum asn1print_flags2 {
 
 int asn1print_expr_proto(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *tc, enum asn1print_flags2 flags, int level);
 void toLowercase(char *mixedCase);
+void toSnakecase(char *mixedCase);
 char *toLowercaseDup(char *mixedCase);
+char *toLowerSnakeCaseDup(char *mixedCase);
 void toUppercase(char *mixedCase);
 char *toUppercaseDup(char *mixedCase);
+int startNotLcLetter(char *name);
+void pathToPkg(char *pkg);
 
 #endif /* LIBASN1PRINT_ASN1PRINTPROTO_H_ */

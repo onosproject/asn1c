@@ -24,6 +24,7 @@
 #include <asn1fix_export.h>
 #include <asn1p_value.h>
 #include <asn1p_integer.h>
+#include <asn1print.h>
 
 #include "asn1printproto.h"
 
@@ -90,11 +91,14 @@ asn1print_expr_proto(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *expr, enum
 			switch (expr->value->type) {
 			case 4: // INTEGER
 				INDENT("// int32 %s = 1 [(validate.rules).int32.const = ", expr->Identifier);
-				safe_printf(" %d];\n", expr->value->value.v_integer);
+				safe_printf(" %d]; //", expr->value->value.v_integer);
 				break;
 			default:
 				INDENT("// Error");
 			}
+			asn1print_ref(expr->reference, flags);
+			safe_printf("\n");
+
 			return 0;
 		}
 	} else if (expr->expr_type == ASN_BASIC_INTEGER && expr->meta_type == AMT_VALUESET) {
@@ -226,6 +230,14 @@ char* toLowercaseDup(char *mixedCase) {
 	return mixedCaseDup;
 }
 
+// Create new string with in lower_snake_case. Caller must free
+char* toLowerSnakeCaseDup(char *mixedCase) {
+	char *mixedCaseDup = strdup(mixedCase);
+	toLowercase(mixedCaseDup);
+	toSnakecase(mixedCaseDup);
+	return mixedCaseDup;
+}
+
 // Replace any lower case chars with upper
 void toUppercase(char *mixedCase) {
 	int i = 0;
@@ -235,9 +247,39 @@ void toUppercase(char *mixedCase) {
 	}
 }
 
+// Replace any punctuation chars with _
+void toSnakecase(char *mixedCase) {
+	int i = 0;
+	while(mixedCase[i]) {
+		switch (mixedCase[i]) {
+		case '-':
+		case '.':
+			(mixedCase)[i] = '_';
+		}
+		i++;
+	}
+}
+
 // Create new string with in upper case. Caller must free
 char* toUppercaseDup(char *mixedCase) {
 	char *mixedCaseDup = strdup(mixedCase);
 	toUppercase(mixedCaseDup);
 	return mixedCaseDup;
+}
+
+int startNotLcLetter(char *name) {
+	if (name[0] < 'a' || name[0] > 'z') {
+		return 1;
+	}
+	return 0;
+}
+
+void pathToPkg(char *pkg) {
+	int i = 0;
+	while(pkg[i]) {
+		if (pkg[i] == '/') {
+			(pkg)[i] = '.';
+		}
+		i++;
+	}
 }
