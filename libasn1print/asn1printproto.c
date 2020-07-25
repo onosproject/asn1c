@@ -283,3 +283,21 @@ void pathToPkg(char *pkg) {
 		i++;
 	}
 }
+
+char *removeRelPath(char *path) {
+	int count = 0;
+	char *newStart = path;
+	while (strstr(newStart, "__/") != NULL) {
+		if (strcmp(newStart, strstr(newStart, "__/")) == 0) {
+			newStart = newStart+3;
+			count++;
+		}
+	}
+	while (count > 0) {
+		if (strchr(newStart, '/') != NULL) {
+			newStart = strchr(newStart, '/') + 1;
+		}
+		count--;
+	}
+	return newStart;
+}

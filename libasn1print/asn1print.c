@@ -196,18 +196,20 @@ asn1print_module(asn1p_t *asn, asn1p_module_t *mod, enum asn1print_flags flags) 
 	} else if (flags & APF_PRINT_PROTOBUF) {
 		safe_printf("\nsyntax = \"proto3\";\n\n");
 		char *sourceFileLc = toLowerSnakeCaseDup(mod->source_file_name);
-		if (startNotLcLetter(sourceFileLc) == 0) {
-			safe_printf("package %s.v1;\n\n", sourceFileLc);
+		char *srcNoRelPath = removeRelPath(sourceFileLc);
+
+		if (startNotLcLetter(srcNoRelPath) == 0) {
+			safe_printf("package %s.v1;\n\n", srcNoRelPath);
 		} else {
-			safe_printf("package pkg%s.v1;\n\n", sourceFileLc);
+			safe_printf("package pkg%s.v1;\n\n", srcNoRelPath);
 		}
 
 		TQ_FOR(tx, &(mod->imports), xp_next) {
 			char* importName = toLowercaseDup(tx->fromModuleName);
-			if (startNotLcLetter(sourceFileLc) == 0) {
-				safe_printf("import \"%s/v1/%s.proto\";", sourceFileLc, importName);
+			if (startNotLcLetter(srcNoRelPath) == 0) {
+				safe_printf("import \"%s/v1/%s.proto\";", srcNoRelPath, importName);
 			} else {
-				safe_printf("import \"pkg%s/v1/%s.proto\";", sourceFileLc, importName);
+				safe_printf("import \"pkg%s/v1/%s.proto\";", srcNoRelPath, importName);
 			}
 			free(importName);
 			if (tx->identifier.oid != NULL) {
