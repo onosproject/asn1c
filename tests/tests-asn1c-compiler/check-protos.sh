@@ -17,24 +17,18 @@ print_status() {
     fi
 }
 
-cat << EOF > prototool.yaml
-protoc:
-  version: 3.11.0
-lint:
-  group: google
-EOF
-
 trap print_status EXIT
 
 top_srcdir="${top_srcdir:-../..}"
 top_builddir="${top_builddir:-../..}"
 
 for ref in ${top_srcdir}/tests/tests-asn1c-compiler/*.asn1.-B; do
-	reffilename=${ref/%".-B"/""}
-	csplit ${ref} --elide-empty-files --prefix ${reffilename}. --suffix "%d.proto" -s '/\w\.proto ////////////' '{*}'
-	refdir=${ref/%".asn1.-B"/""}
+	baseref=$(basename -- "$ref")
+	reffilename=${baseref/%".-B"/""}
+	csplit ${ref} --elide-empty-files --prefix ${top_builddir}/tests/tests-asn1c-compiler/${reffilename}. --suffix "%d.proto" -s '/\w\.proto ////////////' '{*}'
+	refdir=${top_builddir}/tests/tests-asn1c-compiler/${baseref/%".asn1.-B"/""}
 	mkdir -p ${refdir}
-	for refproto in ${reffilename}*.proto; do
+	for refproto in ${top_builddir}/tests/tests-asn1c-compiler/${reffilename}*.proto; do
 		newname=`head -n 1 ${refproto} | grep '\w.proto' | awk 'BEGIN { FS = " "}; { print $2 }'`
 		package=`grep "^package" ${refproto} | awk 'BEGIN { FS = " "}; { print $2 }' | awk 'BEGIN { FS = ";"}; { print $1 }'`
 		packagedir=${package//"."/"/"}
@@ -62,7 +56,5 @@ EOF
 	rm -rf ${refdir}
 
 done
-
-rm -f prototool.yaml
 
 exit $finalExitCode
