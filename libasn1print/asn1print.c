@@ -78,9 +78,6 @@ static int asn1print_oid(int prior_len, asn1p_oid_t *oid, enum asn1print_flags f
 static int asn1print_tag(const asn1p_expr_t *tc, enum asn1print_flags flags);
 static int asn1print_params(const asn1p_paramlist_t *pl,enum asn1print_flags flags);
 static int asn1print_with_syntax(const asn1p_wsyntx_t *wx, enum asn1print_flags flags);
-static int asn1print_constraint(const asn1p_constraint_t *, enum asn1print_flags);
-static int asn1print_value(const asn1p_value_t *val, enum asn1print_flags flags);
-static int asn1print_expr(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *tc, enum asn1print_flags flags, int level);
 static int asn1print_expr_dtd(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *tc, enum asn1print_flags flags, int level);
 
 /* Check printf's error code, to be pedantic. */
@@ -316,7 +313,7 @@ asn1print_tag(const asn1p_expr_t *tc, enum asn1print_flags flags) {
 	return 0;
 }
 
-static int
+int
 asn1print_value(const asn1p_value_t *val, enum asn1print_flags flags) {
 
 	if(val == NULL)
@@ -427,7 +424,7 @@ asn1p_constraint_string(const asn1p_constraint_t *ct) {
     return &all_output_.buffer[old_len];
 }
 
-static int
+int
 asn1print_constraint(const asn1p_constraint_t *ct, enum asn1print_flags flags) {
 	int symno = 0;
 	int perhaps_subconstraints = 0;
@@ -676,7 +673,7 @@ asn1print_constraint_explain(const char *dbg_name, asn1p_expr_type_e expr_type,
 	return 0;
 }
 
-static int
+int
 asn1print_expr(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *tc, enum asn1print_flags flags, int level) {
 	int SEQ_OF = 0;
     int has_space = 0;

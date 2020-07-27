@@ -35,6 +35,8 @@ typedef enum {
     GLOBAL_BUFFER,
 } print_method_e;
 static print_method_e print_method_;
+static int asn1print_constraint_proto(const asn1p_constraint_t *ct, enum asn1print_flags2 flags);
+
 
 #define	INDENT(fmt, args...)    do {        \
         if(!(flags & APF_NOINDENT2)) {       \
@@ -61,6 +63,24 @@ static int safe_printf(const char *fmt, ...) {
     }
     assert(ret >= 0);
     va_end(ap);
+
+    return ret;
+}
+
+/* Pedantically check fwrite's return value. */
+static size_t safe_fwrite(const void *ptr, size_t size) {
+    size_t ret;
+
+    switch(print_method_) {
+    case PRINT_STDOUT:
+        ret = fwrite(ptr, 1, size, stdout);
+        assert(ret == size);
+        break;
+    case GLOBAL_BUFFER:
+        abuf_add_bytes(&all_output_, ptr, size);
+        ret = size;
+        break;
+    }
 
     return ret;
 }
@@ -103,23 +123,23 @@ asn1print_expr_proto(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *expr, enum
 		}
 	} else if (expr->expr_type == ASN_BASIC_INTEGER && expr->meta_type == AMT_VALUESET) {
 		INDENT("// int32 %s = 1 [(validate.rules).int32 = {in: [", expr->Identifier);
-		if (expr->constraints != NULL && expr->constraints->elements) {
-			struct asn1p_constraint_s *elements = *(expr->constraints->elements);
-			safe_printf("%d", elements->value->value.v_integer);
-			// TODO walk through the range of integers - like test 7 SameInterval
-		}
+		asn1print_constraint_proto(expr->constraints, flags);
 		safe_printf("]}];\n");
 		return 0;
-	} else if (expr->expr_type == ASN_BASIC_INTEGER && expr->meta_type == AMT_TYPE) {
-		INDENT("// int32 %s = 1 [(validate.rules).int32 = {", expr->Identifier);
-		if (expr->constraints != NULL && expr->constraints->elements) {
-			struct asn1p_constraint_s *elements = *(expr->constraints->elements);
-			safe_printf("gte: %d, ", elements->range_start->value.v_integer);
-			safe_printf("lte: %d}];\n", elements->range_stop->value.v_integer);
-		} else {
-			safe_printf("}];\n");
+	} else if (expr->meta_type == AMT_TYPE && expr->expr_type != ASN_CONSTR_SEQUENCE) {
+		if (expr->expr_type == ASN_BASIC_INTEGER) {
+			INDENT("// int32 %s = 1 [(validate.rules).int32 = ", expr->Identifier);
+			if (expr->constraints != NULL) {
+				asn1print_constraint_proto(expr->constraints, flags);
+			} else {
+				safe_printf("{}");
+				// TODO: Find why 07 test does not show Reason values
+			}
+		} else if (expr->expr_type == ASN_STRING_IA5String) {
+			INDENT("// string %s = 1 [(validate.rules).string = {", expr->Identifier);
+			asn1print_constraint_proto(expr->constraints, flags);
 		}
-		// TODO handle sub-elements like for test 07 Reason
+		safe_printf("];\n");
 		return 0;
 	} else if(expr->expr_type == A1TC_REFERENCE) {
 		se = WITH_MODULE_NAMESPACE(expr->module, expr_ns, asn1f_find_terminal_type_ex(asn, expr_ns, expr));
@@ -214,6 +234,146 @@ asn1print_expr_proto(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *expr, enum
 //			asn1print_expr_proto(asn, mod, se, flags, level + 1);
 //		}
 	}
+
+	return 0;
+}
+
+static int
+asn1print_constraint_proto(const asn1p_constraint_t *ct, enum asn1print_flags2 flags) {
+	int symno = 0;
+	int perhaps_subconstraints = 0;
+
+	if(ct == 0) return 0;
+
+	switch(ct->type) {
+	case ACT_EL_TYPE:
+		asn1print_value(ct->containedSubtype, (enum asn1print_flags) flags);
+		perhaps_subconstraints = 1;
+		break;
+	case ACT_EL_VALUE:
+		asn1print_value(ct->value, (enum asn1print_flags) flags);
+		perhaps_subconstraints = 1;
+		break;
+	case ACT_EL_RANGE:
+	case ACT_EL_LLRANGE:
+	case ACT_EL_RLRANGE:
+	case ACT_EL_ULRANGE:
+		switch(ct->type) {
+		case ACT_EL_RANGE:
+		case ACT_EL_RLRANGE:
+			safe_printf("gte: ");
+			break;
+		case ACT_EL_LLRANGE:
+		case ACT_EL_ULRANGE:
+			safe_printf("gt: ");
+			break;
+		default: safe_printf("?..?"); break;
+		}
+		asn1print_value(ct->range_start, (enum asn1print_flags) flags);
+		safe_printf(", ");
+		switch(ct->type) {
+		case ACT_EL_RANGE:
+		case ACT_EL_LLRANGE:
+			safe_printf("lte: ");
+			break;
+		case ACT_EL_RLRANGE:
+		case ACT_EL_ULRANGE:
+			safe_printf("lt: ");
+			break;
+		default: safe_printf("?..?"); break;
+		}
+		asn1print_value(ct->range_stop, (enum asn1print_flags) flags);
+		break;
+	case ACT_EL_EXT:
+		safe_printf("// Extensible");
+		break;
+	case ACT_CT_SIZE:
+	case ACT_CT_FROM:
+		switch(ct->type) {
+		case ACT_CT_SIZE: safe_printf("SIZE"); break;
+		case ACT_CT_FROM: safe_printf("FROM"); break;
+		default: safe_printf("??? "); break;
+		}
+		assert(ct->el_count != 0);
+		assert(ct->el_count == 1);
+		asn1print_constraint_proto(ct->elements[0], flags);
+		break;
+	case ACT_CT_WCOMP:
+		assert(ct->el_count != 0);
+		assert(ct->el_count == 1);
+		safe_printf("WITH COMPONENT");
+		perhaps_subconstraints = 1;
+		break;
+	case ACT_CT_WCOMPS: {
+			unsigned int i;
+			safe_printf("WITH COMPONENTS { ");
+			for(i = 0; i < ct->el_count; i++) {
+				asn1p_constraint_t *cel = ct->elements[i];
+				if(i) safe_printf(", ");
+				asn1print_constraint_proto(cel, flags);
+				switch(cel->presence) {
+				case ACPRES_DEFAULT: break;
+				case ACPRES_PRESENT: safe_printf(" PRESENT"); break;
+				case ACPRES_ABSENT: safe_printf(" ABSENT"); break;
+				case ACPRES_OPTIONAL: safe_printf(" OPTIONAL");break;
+				}
+			}
+			safe_printf(" }");
+		}
+		break;
+	case ACT_CT_CTDBY:
+		safe_printf("CONSTRAINED BY ");
+		assert(ct->value->type == ATV_UNPARSED);
+		safe_fwrite(ct->value->value.string.buf, ct->value->value.string.size);
+		break;
+	case ACT_CT_CTNG:
+		safe_printf("CONTAINING ");
+		asn1print_expr(ct->value->value.v_type->module->asn1p,
+			ct->value->value.v_type->module,
+			ct->value->value.v_type,
+			(enum asn1print_flags) flags, 1);
+		break;
+	case ACT_CT_PATTERN:
+		safe_printf("PATTERN ");
+		asn1print_value(ct->value, (enum asn1print_flags) flags);
+		break;
+	case ACT_CA_SET: symno++;   /* Fall through */
+	case ACT_CA_CRC: symno++;   /* Fall through */
+	case ACT_CA_CSV: symno++;   /* Fall through */
+	case ACT_CA_UNI: symno++;   /* Fall through */
+	case ACT_CA_INT: symno++;   /* Fall through */
+	case ACT_CA_EXC:
+		{
+			char *symtable[] = { " EXCEPT ", " ^ ", " | ", ",",
+					"", "(" };
+			unsigned int i;
+            if(ct->type == ACT_CA_SET) safe_printf("{");
+			for(i = 0; i < ct->el_count; i++) {
+				if(i) safe_printf("%s", symtable[symno]);
+				if(ct->type == ACT_CA_CRC) safe_printf("{");
+				asn1print_constraint_proto(ct->elements[i], flags);
+				if(ct->type == ACT_CA_CRC) safe_printf("}");
+				if(ct->type == ACT_CA_SET && i+1 < ct->el_count)
+					safe_printf("} ");
+			}
+            if(ct->type == ACT_CA_SET) safe_printf("}");
+		}
+		break;
+	case ACT_CA_AEX:
+		assert(ct->el_count == 1);
+		safe_printf("ALL EXCEPT");
+		perhaps_subconstraints = 1;
+		break;
+	case ACT_INVALID:
+		assert(ct->type != ACT_INVALID);
+		break;
+	}
+
+    if(perhaps_subconstraints && ct->el_count) {
+        safe_printf(" ");
+        assert(ct->el_count == 1);
+        asn1print_constraint_proto(ct->elements[0], flags);
+    }
 
 	return 0;
 }
