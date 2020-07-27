@@ -13,7 +13,7 @@ enum Enum1 {
     ENUM1_GREEN = 1;
     ENUM1_BLUE = 4;
     ENUM1_ALPHA = 5;
-    // Extensible 
+    // Extensible
 }
 
 enum Enum2 {
@@ -24,14 +24,14 @@ enum Enum2 {
     ENUM2_ALPHA = 46;
     ENUM2_BETA = 12;
     ENUM2_GAMMA = 103;
-    // Extensible 
+    // Extensible
 }
 
 enum Enum3 {
     ENUM3_A = 0;
     ENUM3_B = 3;
     ENUM3_C = 1;
-    // Extensible 
+    // Extensible
 }
 
 enum Enum4 {
@@ -39,13 +39,13 @@ enum Enum4 {
     ENUM4_B = 1;
     ENUM4_C = 3;
     ENUM4_D = 4;
-    // Extensible 
+    // Extensible
 }
 
 enum Enum5 {
     ENUM5_A = 0;
     ENUM5_Z = 25;
     ENUM5_D = 26;
-    // Extensible 
+    // Extensible
 }
 

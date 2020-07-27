@@ -35,5 +35,6 @@ char *toUppercaseDup(char *mixedCase);
 int startNotLcLetter(char *name);
 void pathToPkg(char *pkg);
 char *removeRelPath(char *path);
+char* toUpperSnakeCaseDup(const char *mixedCase);
 
 #endif /* LIBASN1PRINT_ASN1PRINTPROTO_H_ */

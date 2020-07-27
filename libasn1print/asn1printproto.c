@@ -96,7 +96,7 @@ asn1print_expr_proto(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *expr, enum
 			default:
 				INDENT("// Error");
 			}
-			asn1print_ref(expr->reference, flags);
+			asn1print_ref(expr->reference, (enum asn1print_flags) flags);
 			safe_printf("\n");
 
 			return 0;
@@ -139,6 +139,7 @@ asn1print_expr_proto(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *expr, enum
 	level++;
 	if(TQ_FIRST(&expr->members)) {
 		int extensible = 0;
+		int hasEnumZero = 0;
 		if(expr->expr_type == ASN_BASIC_BIT_STRING)
 			dont_involve_children = 1;
 		TQ_FOR(se, &(expr->members), next) {
@@ -151,8 +152,21 @@ asn1print_expr_proto(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *expr, enum
 			} else if (se->expr_type == ASN_CONSTR_SEQUENCE_OF) {
 				INDENT("repeated ");
 				safe_printf("TODO find reference ");
+			} else if (se->expr_type == A1TC_REFERENCE && se->meta_type == AMT_TYPEREF) {
+				struct asn1p_ref_component_s *comp = se->reference->components;
+				if (se->reference->comp_count == 2) {
+					INDENT("%s", (comp+1)->name);
+				} else if (se->reference->comp_count == 1) {
+					INDENT("%s", comp->name);
+				}
 			} else if (se->expr_type == A1TC_UNIVERVAL) { // for enum values
-				char *exprUc = toUppercaseDup(expr->Identifier);
+				char *exprUc = toUpperSnakeCaseDup(expr->Identifier);
+				if (hasEnumZero == 0) {
+					if (se->value->type == ATV_INTEGER && se->value->value.v_integer != 0) {
+						INDENT("%s_UNDEFINED = 0;\n", exprUc);
+					}
+					hasEnumZero = 1;
+				}
 				char *seUc = toUppercaseDup(se->Identifier);
 				INDENT("%s_%s", exprUc, seUc);
 				free(exprUc);
@@ -179,18 +193,8 @@ asn1print_expr_proto(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *expr, enum
 			safe_printf(" = %d;\n", ++index);
 		}
 		if(extensible) {
-			INDENT("// Extensible ");
-			if(expr->expr_type != ASN_CONSTR_SET
-			&& expr->expr_type != ASN_CONSTR_CHOICE
-			&& expr->expr_type != ASN_BASIC_INTEGER
-			&& expr->expr_type != ASN_BASIC_ENUMERATED)
-				safe_printf("*");
-			safe_printf("\n");
+			INDENT("// Extensible\n");
 		}
-
-		if(expr->expr_type == ASN_CONSTR_SET)
-			safe_printf("*");
-
 	}
 
 	level--;
@@ -258,6 +262,27 @@ void toSnakecase(char *mixedCase) {
 		}
 		i++;
 	}
+}
+
+// Create new string with in upper case. Caller must free
+// Any uppercase letters after the first one must be prefixed with '_'
+char* toUpperSnakeCaseDup(const char *mixedCase) {
+	int i = 0;
+	int added = 0;
+	char *upperSnakeCase = strdup(mixedCase);
+	int origlen = strlen(mixedCase);
+	while(mixedCase[i]) {
+		if (i > 0 && mixedCase[i] >= 'A' && mixedCase[i] <= 'Z') {
+			upperSnakeCase = (char *)realloc(upperSnakeCase, origlen + added + 1);
+			upperSnakeCase[i+added] = '_';
+			added++;
+		}
+		upperSnakeCase[i+added] = toupper(mixedCase[i]);
+		i++;
+	}
+	upperSnakeCase[i+added] = '\0';
+
+	return upperSnakeCase;
 }
 
 // Create new string with in upper case. Caller must free

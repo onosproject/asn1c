@@ -1,26 +1,26 @@
 ////////////////////// moduletestresolver1.proto //////////////////////
-// Protobuf generated from /13-resolver-OK.asn1 by asn1c-0.9.29
+// Protobuf generated from /13a-resolver-OK.asn1 by asn1c-0.9.29
 // ModuleTestResolver1 { iso org(3) dod(6) internet(1) private(4) enterprise(1) spelio(9363) software(1) asn1c(5) test(1) 13 1 }
 
 syntax = "proto3";
 
-package pkg13_resolver_ok_asn1.v1;
+package pkg13a_resolver_ok_asn1.v1;
 
-import "pkg13_resolver_ok_asn1/v1/moduletestresolver2.proto"; // { iso org(3) dod(6) internet(1) private(4) enterprise(1) spelio(9363) software(1) asn1c(5) test(1) 13 2 }
+import "pkg13a_resolver_ok_asn1/v1/moduletestresolver2.proto"; // { iso org(3) dod(6) internet(1) private(4) enterprise(1) spelio(9363) software(1) asn1c(5) test(1) 13 2 }
 // import "validate/validate.proto";
 
 // int32 alpha = 1 [(validate.rules).int32.const =  123]; //IntegerType
-// int32 alpha2 = 1 [(validate.rules).int32.const =  123]; //Renamed.IntegerType
+// int32 alpha2 = 1 [(validate.rules).int32.const =  123]; //ModuleTestResolver2.IntegerType
 // int32 check-alpha = 1 [(validate.rules).int32.const = 123];
 // int32 check-alpha2 = 1 [(validate.rules).int32.const = 123];
 
 ////////////////////// moduletestresolver2.proto //////////////////////
-// Protobuf generated from /13-resolver-OK.asn1 by asn1c-0.9.29
+// Protobuf generated from /13a-resolver-OK.asn1 by asn1c-0.9.29
 // ModuleTestResolver2 { iso org(3) dod(6) internet(1) private(4) enterprise(1) spelio(9363) software(1) asn1c(5) test(1) 13 2 }
 
 syntax = "proto3";
 
-package pkg13_resolver_ok_asn1.v1;
+package pkg13a_resolver_ok_asn1.v1;
 
 // import "validate/validate.proto";
 
