@@ -24,6 +24,7 @@
 #include <asn1fix_export.h>
 #include <asn1p_value.h>
 #include <asn1p_integer.h>
+#include <asn1print.h>
 
 #include "asn1printproto.h"
 
@@ -34,6 +35,8 @@ typedef enum {
     GLOBAL_BUFFER,
 } print_method_e;
 static print_method_e print_method_;
+static int asn1print_constraint_proto(const asn1p_constraint_t *ct, enum asn1print_flags2 flags);
+
 
 #define	INDENT(fmt, args...)    do {        \
         if(!(flags & APF_NOINDENT2)) {       \
@@ -64,6 +67,24 @@ static int safe_printf(const char *fmt, ...) {
     return ret;
 }
 
+/* Pedantically check fwrite's return value. */
+static size_t safe_fwrite(const void *ptr, size_t size) {
+    size_t ret;
+
+    switch(print_method_) {
+    case PRINT_STDOUT:
+        ret = fwrite(ptr, 1, size, stdout);
+        assert(ret == size);
+        break;
+    case GLOBAL_BUFFER:
+        abuf_add_bytes(&all_output_, ptr, size);
+        ret = size;
+        break;
+    }
+
+    return ret;
+}
+
 int
 asn1print_expr_proto(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *expr, enum asn1print_flags2 flags, int level) {
 	asn1p_expr_t *se;
@@ -90,32 +111,35 @@ asn1print_expr_proto(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *expr, enum
 			switch (expr->value->type) {
 			case 4: // INTEGER
 				INDENT("// int32 %s = 1 [(validate.rules).int32.const = ", expr->Identifier);
-				safe_printf(" %d];\n", expr->value->value.v_integer);
+				safe_printf(" %d]; //", expr->value->value.v_integer);
 				break;
 			default:
 				INDENT("// Error");
 			}
+			asn1print_ref(expr->reference, (enum asn1print_flags) flags);
+			safe_printf("\n");
+
 			return 0;
 		}
 	} else if (expr->expr_type == ASN_BASIC_INTEGER && expr->meta_type == AMT_VALUESET) {
 		INDENT("// int32 %s = 1 [(validate.rules).int32 = {in: [", expr->Identifier);
-		if (expr->constraints != NULL && expr->constraints->elements) {
-			struct asn1p_constraint_s *elements = *(expr->constraints->elements);
-			safe_printf("%d", elements->value->value.v_integer);
-			// TODO walk through the range of integers - like test 7 SameInterval
-		}
+		asn1print_constraint_proto(expr->constraints, flags);
 		safe_printf("]}];\n");
 		return 0;
-	} else if (expr->expr_type == ASN_BASIC_INTEGER && expr->meta_type == AMT_TYPE) {
-		INDENT("// int32 %s = 1 [(validate.rules).int32 = {", expr->Identifier);
-		if (expr->constraints != NULL && expr->constraints->elements) {
-			struct asn1p_constraint_s *elements = *(expr->constraints->elements);
-			safe_printf("gte: %d, ", elements->range_start->value.v_integer);
-			safe_printf("lte: %d}];\n", elements->range_stop->value.v_integer);
-		} else {
-			safe_printf("}];\n");
+	} else if (expr->meta_type == AMT_TYPE && expr->expr_type != ASN_CONSTR_SEQUENCE) {
+		if (expr->expr_type == ASN_BASIC_INTEGER) {
+			INDENT("// int32 %s = 1 [(validate.rules).int32 = ", expr->Identifier);
+			if (expr->constraints != NULL) {
+				asn1print_constraint_proto(expr->constraints, flags);
+			} else {
+				safe_printf("{}");
+				// TODO: Find why 07 test does not show Reason values
+			}
+		} else if (expr->expr_type == ASN_STRING_IA5String) {
+			INDENT("// string %s = 1 [(validate.rules).string = {", expr->Identifier);
+			asn1print_constraint_proto(expr->constraints, flags);
 		}
-		// TODO handle sub-elements like for test 07 Reason
+		safe_printf("];\n");
 		return 0;
 	} else if(expr->expr_type == A1TC_REFERENCE) {
 		se = WITH_MODULE_NAMESPACE(expr->module, expr_ns, asn1f_find_terminal_type_ex(asn, expr_ns, expr));
@@ -135,6 +159,7 @@ asn1print_expr_proto(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *expr, enum
 	level++;
 	if(TQ_FIRST(&expr->members)) {
 		int extensible = 0;
+		int hasEnumZero = 0;
 		if(expr->expr_type == ASN_BASIC_BIT_STRING)
 			dont_involve_children = 1;
 		TQ_FOR(se, &(expr->members), next) {
@@ -147,8 +172,21 @@ asn1print_expr_proto(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *expr, enum
 			} else if (se->expr_type == ASN_CONSTR_SEQUENCE_OF) {
 				INDENT("repeated ");
 				safe_printf("TODO find reference ");
+			} else if (se->expr_type == A1TC_REFERENCE && se->meta_type == AMT_TYPEREF) {
+				struct asn1p_ref_component_s *comp = se->reference->components;
+				if (se->reference->comp_count == 2) {
+					INDENT("%s", (comp+1)->name);
+				} else if (se->reference->comp_count == 1) {
+					INDENT("%s", comp->name);
+				}
 			} else if (se->expr_type == A1TC_UNIVERVAL) { // for enum values
-				char *exprUc = toUppercaseDup(expr->Identifier);
+				char *exprUc = toUpperSnakeCaseDup(expr->Identifier);
+				if (hasEnumZero == 0) {
+					if (se->value->type == ATV_INTEGER && se->value->value.v_integer != 0) {
+						INDENT("%s_UNDEFINED = 0;\n", exprUc);
+					}
+					hasEnumZero = 1;
+				}
 				char *seUc = toUppercaseDup(se->Identifier);
 				INDENT("%s_%s", exprUc, seUc);
 				free(exprUc);
@@ -175,18 +213,8 @@ asn1print_expr_proto(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *expr, enum
 			safe_printf(" = %d;\n", ++index);
 		}
 		if(extensible) {
-			INDENT("// Extensible ");
-			if(expr->expr_type != ASN_CONSTR_SET
-			&& expr->expr_type != ASN_CONSTR_CHOICE
-			&& expr->expr_type != ASN_BASIC_INTEGER
-			&& expr->expr_type != ASN_BASIC_ENUMERATED)
-				safe_printf("*");
-			safe_printf("\n");
+			INDENT("// Extensible\n");
 		}
-
-		if(expr->expr_type == ASN_CONSTR_SET)
-			safe_printf("*");
-
 	}
 
 	level--;
@@ -210,6 +238,146 @@ asn1print_expr_proto(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *expr, enum
 	return 0;
 }
 
+static int
+asn1print_constraint_proto(const asn1p_constraint_t *ct, enum asn1print_flags2 flags) {
+	int symno = 0;
+	int perhaps_subconstraints = 0;
+
+	if(ct == 0) return 0;
+
+	switch(ct->type) {
+	case ACT_EL_TYPE:
+		asn1print_value(ct->containedSubtype, (enum asn1print_flags) flags);
+		perhaps_subconstraints = 1;
+		break;
+	case ACT_EL_VALUE:
+		asn1print_value(ct->value, (enum asn1print_flags) flags);
+		perhaps_subconstraints = 1;
+		break;
+	case ACT_EL_RANGE:
+	case ACT_EL_LLRANGE:
+	case ACT_EL_RLRANGE:
+	case ACT_EL_ULRANGE:
+		switch(ct->type) {
+		case ACT_EL_RANGE:
+		case ACT_EL_RLRANGE:
+			safe_printf("gte: ");
+			break;
+		case ACT_EL_LLRANGE:
+		case ACT_EL_ULRANGE:
+			safe_printf("gt: ");
+			break;
+		default: safe_printf("?..?"); break;
+		}
+		asn1print_value(ct->range_start, (enum asn1print_flags) flags);
+		safe_printf(", ");
+		switch(ct->type) {
+		case ACT_EL_RANGE:
+		case ACT_EL_LLRANGE:
+			safe_printf("lte: ");
+			break;
+		case ACT_EL_RLRANGE:
+		case ACT_EL_ULRANGE:
+			safe_printf("lt: ");
+			break;
+		default: safe_printf("?..?"); break;
+		}
+		asn1print_value(ct->range_stop, (enum asn1print_flags) flags);
+		break;
+	case ACT_EL_EXT:
+		safe_printf("// Extensible");
+		break;
+	case ACT_CT_SIZE:
+	case ACT_CT_FROM:
+		switch(ct->type) {
+		case ACT_CT_SIZE: safe_printf("SIZE"); break;
+		case ACT_CT_FROM: safe_printf("FROM"); break;
+		default: safe_printf("??? "); break;
+		}
+		assert(ct->el_count != 0);
+		assert(ct->el_count == 1);
+		asn1print_constraint_proto(ct->elements[0], flags);
+		break;
+	case ACT_CT_WCOMP:
+		assert(ct->el_count != 0);
+		assert(ct->el_count == 1);
+		safe_printf("WITH COMPONENT");
+		perhaps_subconstraints = 1;
+		break;
+	case ACT_CT_WCOMPS: {
+			unsigned int i;
+			safe_printf("WITH COMPONENTS { ");
+			for(i = 0; i < ct->el_count; i++) {
+				asn1p_constraint_t *cel = ct->elements[i];
+				if(i) safe_printf(", ");
+				asn1print_constraint_proto(cel, flags);
+				switch(cel->presence) {
+				case ACPRES_DEFAULT: break;
+				case ACPRES_PRESENT: safe_printf(" PRESENT"); break;
+				case ACPRES_ABSENT: safe_printf(" ABSENT"); break;
+				case ACPRES_OPTIONAL: safe_printf(" OPTIONAL");break;
+				}
+			}
+			safe_printf(" }");
+		}
+		break;
+	case ACT_CT_CTDBY:
+		safe_printf("CONSTRAINED BY ");
+		assert(ct->value->type == ATV_UNPARSED);
+		safe_fwrite(ct->value->value.string.buf, ct->value->value.string.size);
+		break;
+	case ACT_CT_CTNG:
+		safe_printf("CONTAINING ");
+		asn1print_expr(ct->value->value.v_type->module->asn1p,
+			ct->value->value.v_type->module,
+			ct->value->value.v_type,
+			(enum asn1print_flags) flags, 1);
+		break;
+	case ACT_CT_PATTERN:
+		safe_printf("PATTERN ");
+		asn1print_value(ct->value, (enum asn1print_flags) flags);
+		break;
+	case ACT_CA_SET: symno++;   /* Fall through */
+	case ACT_CA_CRC: symno++;   /* Fall through */
+	case ACT_CA_CSV: symno++;   /* Fall through */
+	case ACT_CA_UNI: symno++;   /* Fall through */
+	case ACT_CA_INT: symno++;   /* Fall through */
+	case ACT_CA_EXC:
+		{
+			char *symtable[] = { " EXCEPT ", " ^ ", " | ", ",",
+					"", "(" };
+			unsigned int i;
+            if(ct->type == ACT_CA_SET) safe_printf("{");
+			for(i = 0; i < ct->el_count; i++) {
+				if(i) safe_printf("%s", symtable[symno]);
+				if(ct->type == ACT_CA_CRC) safe_printf("{");
+				asn1print_constraint_proto(ct->elements[i], flags);
+				if(ct->type == ACT_CA_CRC) safe_printf("}");
+				if(ct->type == ACT_CA_SET && i+1 < ct->el_count)
+					safe_printf("} ");
+			}
+            if(ct->type == ACT_CA_SET) safe_printf("}");
+		}
+		break;
+	case ACT_CA_AEX:
+		assert(ct->el_count == 1);
+		safe_printf("ALL EXCEPT");
+		perhaps_subconstraints = 1;
+		break;
+	case ACT_INVALID:
+		assert(ct->type != ACT_INVALID);
+		break;
+	}
+
+    if(perhaps_subconstraints && ct->el_count) {
+        safe_printf(" ");
+        assert(ct->el_count == 1);
+        asn1print_constraint_proto(ct->elements[0], flags);
+    }
+
+	return 0;
+}
+
 // Replace any upper case chars with lower
 void toLowercase(char *mixedCase) {
 	int i = 0;
@@ -226,6 +394,14 @@ char* toLowercaseDup(char *mixedCase) {
 	return mixedCaseDup;
 }
 
+// Create new string with in lower_snake_case. Caller must free
+char* toLowerSnakeCaseDup(char *mixedCase) {
+	char *mixedCaseDup = strdup(mixedCase);
+	toLowercase(mixedCaseDup);
+	toSnakecase(mixedCaseDup);
+	return mixedCaseDup;
+}
+
 // Replace any lower case chars with upper
 void toUppercase(char *mixedCase) {
 	int i = 0;
@@ -235,9 +411,78 @@ void toUppercase(char *mixedCase) {
 	}
 }
 
+// Replace any punctuation chars with _
+void toSnakecase(char *mixedCase) {
+	int i = 0;
+	while(mixedCase[i]) {
+		switch (mixedCase[i]) {
+		case '-':
+		case '.':
+			(mixedCase)[i] = '_';
+		}
+		i++;
+	}
+}
+
+// Create new string with in upper case. Caller must free
+// Any uppercase letters after the first one must be prefixed with '_'
+char* toUpperSnakeCaseDup(const char *mixedCase) {
+	int i = 0;
+	int added = 0;
+	char *upperSnakeCase = strdup(mixedCase);
+	int origlen = strlen(mixedCase);
+	while(mixedCase[i]) {
+		if (i > 0 && mixedCase[i] >= 'A' && mixedCase[i] <= 'Z') {
+			upperSnakeCase = (char *)realloc(upperSnakeCase, origlen + added + 1);
+			upperSnakeCase[i+added] = '_';
+			added++;
+		}
+		upperSnakeCase[i+added] = toupper(mixedCase[i]);
+		i++;
+	}
+	upperSnakeCase[i+added] = '\0';
+
+	return upperSnakeCase;
+}
+
 // Create new string with in upper case. Caller must free
 char* toUppercaseDup(char *mixedCase) {
 	char *mixedCaseDup = strdup(mixedCase);
 	toUppercase(mixedCaseDup);
 	return mixedCaseDup;
+}
+
+int startNotLcLetter(char *name) {
+	if (name[0] < 'a' || name[0] > 'z') {
+		return 1;
+	}
+	return 0;
+}
+
+void pathToPkg(char *pkg) {
+	int i = 0;
+	while(pkg[i]) {
+		if (pkg[i] == '/') {
+			(pkg)[i] = '.';
+		}
+		i++;
+	}
+}
+
+char *removeRelPath(char *path) {
+	int count = 0;
+	char *newStart = path;
+	while (strstr(newStart, "__/") != NULL) {
+		if (strcmp(newStart, strstr(newStart, "__/")) == 0) {
+			newStart = newStart+3;
+			count++;
+		}
+	}
+	while (count > 0) {
+		if (strchr(newStart, '/') != NULL) {
+			newStart = strchr(newStart, '/') + 1;
+		}
+		count--;
+	}
+	return newStart;
 }
