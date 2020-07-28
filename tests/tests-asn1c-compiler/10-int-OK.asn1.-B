@@ -6,12 +6,12 @@ syntax = "proto3";
 
 package pkg10_int_ok_asn1.v1;
 
-// import "validate/validate.proto";
+import "validate/v1/validate.proto";
 
-// int32 alpha = 1 [(validate.rules).int32.const = 1];
-// int32 Type1 = 1 [(validate.rules).int32 = {}];
-// int32 Type2 = 1 [(validate.rules).int32 = {}];
-// int32 gamma = 1 [(validate.rules).int32.const =  1]; //Type2
-// int32 delta = 1 [(validate.rules).int32.const =  3]; //Type2
-// int32 check-gamma = 1 [(validate.rules).int32.const = 1];
-// int32 check-delta = 1 [(validate.rules).int32.const = 3];
+// int32 alpha = 1 [(validate.v1.rules).int32.const = 1];
+// int32 Type1 = 1 [(validate.v1.rules).int32 = {}];
+// int32 Type2 = 1 [(validate.v1.rules).int32 = {}];
+// int32 gamma = 1 [(validate.v1.rules).int32.const =  1]; //Type2
+// int32 delta = 1 [(validate.v1.rules).int32.const =  3]; //Type2
+// int32 check-gamma = 1 [(validate.v1.rules).int32.const = 1];
+// int32 check-delta = 1 [(validate.v1.rules).int32.const = 3];

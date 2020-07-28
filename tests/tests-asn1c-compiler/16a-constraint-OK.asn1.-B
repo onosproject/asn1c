@@ -7,10 +7,10 @@ syntax = "proto3";
 package pkg16a_constraint_ok_asn1.v1;
 
 import "pkg16a_constraint_ok_asn1/v1/moduletestconstraint2.proto";
-// import "validate/validate.proto";
+import "validate/v1/validate.proto";
 
-// string Type0 = 1 [(validate.rules).string = {{{{{min_len: 1, max_len: 10}}}}];
-// string Type6 = 1 [(validate.rules).string = {{{{min_len: 1, max_len: 10}}}];
+// string Type0 = 1 [(validate.v1.rules).string = {{{{{min_len: 1, max_len: 10}}}}];
+// string Type6 = 1 [(validate.v1.rules).string = {{{{min_len: 1, max_len: 10}}}];
 
 ////////////////////// moduletestconstraint2.proto //////////////////////
 // Protobuf generated from /16a-constraint-OK.asn1 by asn1c-0.9.29
@@ -20,12 +20,12 @@ syntax = "proto3";
 
 package pkg16a_constraint_ok_asn1.v1;
 
-// import "validate/validate.proto";
+import "validate/v1/validate.proto";
 
-// string Type1 = 1 [(validate.rules).string = {{{min_len: 1, max_len: 10,}}];
-// string Type2 = 1 [(validate.rules).string = {{{min_len: 0, max_len: 4}}];
-// string Type3 = 1 [(validate.rules).string = {{{1}}];
-// int32 Type4 = 1 [(validate.rules).int32 = {gte: 1, lte: MAX}];
+// string Type1 = 1 [(validate.v1.rules).string = {{{min_len: 1, max_len: 10,}}];
+// string Type2 = 1 [(validate.v1.rules).string = {{{min_len: 0, max_len: 4}}];
+// string Type3 = 1 [(validate.v1.rules).string = {{{1}}];
+// int32 Type4 = 1 [(validate.v1.rules).int32 = {gte: 1, lte: MAX}];
 // bool Type5 = 1;
-// int32 ten = 1 [(validate.rules).int32.const = 10];
-// string v1 = 1 [(validate.rules).string.const =  "#value with "double quotes""]; //Type1
+// int32 ten = 1 [(validate.v1.rules).int32.const = 10];
+// string v1 = 1 [(validate.v1.rules).string.const =  "#value with "double quotes""]; //Type1

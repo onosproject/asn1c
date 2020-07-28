@@ -104,17 +104,17 @@ asn1print_expr_proto(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *expr, enum
 		INDENT("enum %s {\n", expr->Identifier);
 	} else if (expr->meta_type == AMT_VALUE) {
 		if (expr->expr_type == ASN_BASIC_INTEGER) {
-			INDENT("// int32 %s = 1 [(validate.rules).int32.const =", expr->Identifier);
+			INDENT("// int32 %s = 1 [(validate.v1.rules).int32.const =", expr->Identifier);
 			safe_printf(" %d];\n", expr->value->value.v_integer);
 			return 0;
 		} else if(expr->expr_type == A1TC_REFERENCE) {
 			switch (expr->value->type) {
 			case ATV_INTEGER: // INTEGER
-				INDENT("// int32 %s = 1 [(validate.rules).int32.const = ", expr->Identifier);
+				INDENT("// int32 %s = 1 [(validate.v1.rules).int32.const = ", expr->Identifier);
 				safe_printf(" %d]; //", expr->value->value.v_integer);
 				break;
 			case ATV_STRING:
-				INDENT("// string %s = 1 [(validate.rules).string.const = ", expr->Identifier);
+				INDENT("// string %s = 1 [(validate.v1.rules).string.const = ", expr->Identifier);
 				safe_printf(" \"%s\"]; //", expr->value->value.string);
 				break;
 			default:
@@ -126,14 +126,14 @@ asn1print_expr_proto(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *expr, enum
 			return 0;
 		}
 	} else if (expr->expr_type == ASN_BASIC_INTEGER && expr->meta_type == AMT_VALUESET) {
-		INDENT("// int32 %s = 1 [(validate.rules).int32 = {in: [", expr->Identifier);
+		INDENT("// int32 %s = 1 [(validate.v1.rules).int32 = {in: [", expr->Identifier);
 		asn1print_constraint_proto(expr->constraints, flags);
 		safe_printf("]}];\n");
 		return 0;
 	} else if (expr->meta_type == AMT_TYPE && expr->expr_type != ASN_CONSTR_SEQUENCE) {
 		switch (expr->expr_type) {
 		case ASN_BASIC_INTEGER:
-			INDENT("// int32 %s = 1 [(validate.rules).int32 = ", expr->Identifier);
+			INDENT("// int32 %s = 1 [(validate.v1.rules).int32 = ", expr->Identifier);
 			if (expr->constraints != NULL) {
 				asn1print_constraint_proto(expr->constraints, flags);
 			} else {
@@ -143,7 +143,7 @@ asn1print_expr_proto(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *expr, enum
 			break;
 		case ASN_STRING_IA5String:
 		case ASN_STRING_BMPString:
-			INDENT("// string %s = 1 [(validate.rules).string = {", expr->Identifier);
+			INDENT("// string %s = 1 [(validate.v1.rules).string = {", expr->Identifier);
 			asn1print_constraint_proto(expr->constraints, flags | APF_STRING_VALUE);
 			break;
 		case ASN_BASIC_BOOLEAN:

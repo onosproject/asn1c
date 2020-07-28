@@ -215,7 +215,7 @@ asn1print_module(asn1p_t *asn, asn1p_module_t *mod, enum asn1print_flags flags) 
 			}
 			safe_printf("\n");
 		}
-		safe_printf("// import \"validate/validate.proto\";\n\n");
+		safe_printf("import \"validate/v1/validate.proto\";\n\n");
 		free(sourceFileLc);
 
 		TQ_FOR(tc, &(mod->members), next) {
