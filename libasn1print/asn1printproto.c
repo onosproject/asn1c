@@ -109,9 +109,13 @@ asn1print_expr_proto(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *expr, enum
 			return 0;
 		} else if(expr->expr_type == A1TC_REFERENCE) {
 			switch (expr->value->type) {
-			case 4: // INTEGER
+			case ATV_INTEGER: // INTEGER
 				INDENT("// int32 %s = 1 [(validate.rules).int32.const = ", expr->Identifier);
 				safe_printf(" %d]; //", expr->value->value.v_integer);
+				break;
+			case ATV_STRING:
+				INDENT("// string %s = 1 [(validate.rules).string.const = ", expr->Identifier);
+				safe_printf(" \"%s\"]; //", expr->value->value.string);
 				break;
 			default:
 				INDENT("// Error");
@@ -127,7 +131,8 @@ asn1print_expr_proto(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *expr, enum
 		safe_printf("]}];\n");
 		return 0;
 	} else if (expr->meta_type == AMT_TYPE && expr->expr_type != ASN_CONSTR_SEQUENCE) {
-		if (expr->expr_type == ASN_BASIC_INTEGER) {
+		switch (expr->expr_type) {
+		case ASN_BASIC_INTEGER:
 			INDENT("// int32 %s = 1 [(validate.rules).int32 = ", expr->Identifier);
 			if (expr->constraints != NULL) {
 				asn1print_constraint_proto(expr->constraints, flags);
@@ -135,9 +140,17 @@ asn1print_expr_proto(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *expr, enum
 				safe_printf("{}");
 				// TODO: Find why 07 test does not show Reason values
 			}
-		} else if (expr->expr_type == ASN_STRING_IA5String) {
+			break;
+		case ASN_STRING_IA5String:
+		case ASN_STRING_BMPString:
 			INDENT("// string %s = 1 [(validate.rules).string = {", expr->Identifier);
-			asn1print_constraint_proto(expr->constraints, flags);
+			asn1print_constraint_proto(expr->constraints, flags | APF_STRING_VALUE);
+			break;
+		case ASN_BASIC_BOOLEAN:
+			INDENT("// bool %s = 1;\n", expr->Identifier);
+			return 0;
+		default:
+			return 0;
 		}
 		safe_printf("];\n");
 		return 0;
@@ -261,11 +274,19 @@ asn1print_constraint_proto(const asn1p_constraint_t *ct, enum asn1print_flags2 f
 		switch(ct->type) {
 		case ACT_EL_RANGE:
 		case ACT_EL_RLRANGE:
-			safe_printf("gte: ");
+			if (flags & APF_STRING_VALUE) {
+				safe_printf("min_len: ");
+			} else {
+				safe_printf("gte: ");
+			}
 			break;
 		case ACT_EL_LLRANGE:
 		case ACT_EL_ULRANGE:
-			safe_printf("gt: ");
+			if (flags & APF_STRING_VALUE) {
+				safe_printf("min_len: ");
+			} else {
+				safe_printf("gt: ");
+			}
 			break;
 		default: safe_printf("?..?"); break;
 		}
@@ -274,23 +295,30 @@ asn1print_constraint_proto(const asn1p_constraint_t *ct, enum asn1print_flags2 f
 		switch(ct->type) {
 		case ACT_EL_RANGE:
 		case ACT_EL_LLRANGE:
-			safe_printf("lte: ");
+			if (flags & APF_STRING_VALUE) {
+				safe_printf("max_len: ");
+			} else {
+				safe_printf("lte: ");
+			}
 			break;
 		case ACT_EL_RLRANGE:
 		case ACT_EL_ULRANGE:
-			safe_printf("lt: ");
+			if (flags & APF_STRING_VALUE) {
+				safe_printf("max_len: ");
+			} else {
+				safe_printf("lt: ");
+			}
 			break;
 		default: safe_printf("?..?"); break;
 		}
 		asn1print_value(ct->range_stop, (enum asn1print_flags) flags);
 		break;
 	case ACT_EL_EXT:
-		safe_printf("// Extensible");
 		break;
 	case ACT_CT_SIZE:
 	case ACT_CT_FROM:
 		switch(ct->type) {
-		case ACT_CT_SIZE: safe_printf("SIZE"); break;
+		case ACT_CT_SIZE: safe_printf(""); break;
 		case ACT_CT_FROM: safe_printf("FROM"); break;
 		default: safe_printf("??? "); break;
 		}
