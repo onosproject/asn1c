@@ -215,7 +215,7 @@ asn1print_module(asn1p_t *asn, asn1p_module_t *mod, enum asn1print_flags flags) 
 			}
 			safe_printf("\n");
 		}
-		safe_printf("// import \"validate/validate.proto\";\n\n");
+		safe_printf("import \"validate/v1/validate.proto\";\n\n");
 		free(sourceFileLc);
 
 		TQ_FOR(tc, &(mod->members), next) {
@@ -336,7 +336,11 @@ asn1print_value(const asn1p_value_t *val, enum asn1print_flags flags) {
 	case ATV_INTEGER:
 		safe_printf("%s", asn1p_itoa(val->value.v_integer));
 		return 0;
-	case ATV_MIN: safe_printf("MIN"); return 0;
+	case ATV_MIN:
+		if (flags & APF_PRINT_PROTOBUF2) {
+			safe_printf("0"); return 0;
+		}
+		safe_printf("MIN"); return 0;
 	case ATV_MAX: safe_printf("MAX"); return 0;
 	case ATV_FALSE: safe_printf("FALSE"); return 0;
 	case ATV_TRUE: safe_printf("TRUE"); return 0;

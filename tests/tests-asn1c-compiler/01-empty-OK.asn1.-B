@@ -6,5 +6,5 @@ syntax = "proto3";
 
 package pkg01_empty_ok_asn1.v1;
 
-// import "validate/validate.proto";
+import "validate/v1/validate.proto";
 

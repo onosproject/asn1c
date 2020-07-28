@@ -7,17 +7,17 @@ syntax = "proto3";
 package pkg14a_resolver_ok_asn1.v1;
 
 import "pkg14a_resolver_ok_asn1/v1/moduletestresolver3.proto";
-// import "validate/validate.proto";
+import "validate/v1/validate.proto";
 
-// int32 alpha = 1 [(validate.rules).int32.const =  2]; //Enumeration
-// int32 other = 1 [(validate.rules).int32.const =  1]; //Enumeration
+// int32 alpha = 1 [(validate.v1.rules).int32.const =  2]; //Enumeration
+// int32 other = 1 [(validate.v1.rules).int32.const =  1]; //Enumeration
 message Struct {
     Enumeration     member1 = 1;
     Enumeration     member2 = 2;
 }
 
-// int32 check-alpha = 1 [(validate.rules).int32.const = 2];
-// int32 check-other = 1 [(validate.rules).int32.const = 1];
+// int32 check-alpha = 1 [(validate.v1.rules).int32.const = 2];
+// int32 check-other = 1 [(validate.v1.rules).int32.const = 1];
 
 ////////////////////// moduletestresolver3.proto //////////////////////
 // Protobuf generated from /14a-resolver-OK.asn1 by asn1c-0.9.29
@@ -28,10 +28,10 @@ syntax = "proto3";
 package pkg14a_resolver_ok_asn1.v1;
 
 import "pkg14a_resolver_ok_asn1/v1/hiddenmodule.proto";
-// import "validate/validate.proto";
+import "validate/v1/validate.proto";
 
-// int32 beta = 1 [(validate.rules).int32.const =  2]; //HiddenEnum
-// int32 gamma = 1 [(validate.rules).int32.const =  1]; //Enumeration
+// int32 beta = 1 [(validate.v1.rules).int32.const =  2]; //HiddenEnum
+// int32 gamma = 1 [(validate.v1.rules).int32.const =  1]; //Enumeration
 enum Enumeration {
     ENUMERATION_UNDEFINED = 0;
     ENUMERATION_A = 1;
@@ -47,7 +47,7 @@ syntax = "proto3";
 
 package pkg14a_resolver_ok_asn1.v1;
 
-// import "validate/validate.proto";
+import "validate/v1/validate.proto";
 
 enum HiddenEnum {
     HIDDEN_ENUM_UNDEFINED = 0;

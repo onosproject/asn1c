@@ -23,6 +23,8 @@ enum asn1print_flags2 {
 	APF_PRINT_CONSTRAINTS2	= 0x08,	/* Explain constraints */
 	APF_PRINT_CLASS_MATRIX2	= 0x10,	/* Dump class matrix */
 	APF_PRINT_PROTOBUF2	= 0x20,	/* Generate Protobuf */
+	APF_STRING_VALUE = 0x40, /* Dealing with a string rather than numeric - for min_len */
+	APF_BYTES_VALUE = 0x80, /* Dealing with bytes rather than numeric - for min_bytes */
 };
 
 int asn1print_expr_proto(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *tc, enum asn1print_flags2 flags, int level);

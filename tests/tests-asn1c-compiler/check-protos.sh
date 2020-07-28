@@ -27,7 +27,8 @@ for ref in ${top_srcdir}/tests/tests-asn1c-compiler/*.asn1.-B; do
 	reffilename=${baseref/%".-B"/""}
 	csplit ${ref} --elide-empty-files --prefix ${top_builddir}/tests/tests-asn1c-compiler/${reffilename}. --suffix "%d.proto" -s '/\w\.proto ////////////' '{*}'
 	refdir=${top_builddir}/tests/tests-asn1c-compiler/${baseref/%".asn1.-B"/""}
-	mkdir -p ${refdir}
+	mkdir -p ${refdir}/validate/v1
+	cp ${top_srcdir}/tests/tests-asn1c-compiler/validate.proto ${refdir}/validate/v1
 	for refproto in ${top_builddir}/tests/tests-asn1c-compiler/${reffilename}*.proto; do
 		newname=`head -n 1 ${refproto} | grep '\w.proto' | awk 'BEGIN { FS = " "}; { print $2 }'`
 		package=`grep "^package" ${refproto} | awk 'BEGIN { FS = " "}; { print $2 }' | awk 'BEGIN { FS = ";"}; { print $1 }'`
