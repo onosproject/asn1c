@@ -104,55 +104,80 @@ asn1print_expr_proto(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *expr, enum
 		INDENT("enum %s {\n", expr->Identifier);
 	} else if (expr->meta_type == AMT_VALUE) {
 		if (expr->expr_type == ASN_BASIC_INTEGER) {
-			INDENT("// int32 %s = 1 [(validate.v1.rules).int32.const =", expr->Identifier);
+			char *pcIdentifier = toPascalCaseDup(expr->Identifier);
+			INDENT("message %s {\n", pcIdentifier);
+			free(pcIdentifier);
+			level++;
+			INDENT("int32 value = 1 [(validate.v1.rules).int32.const =");
 			safe_printf(" %d];\n", expr->value->value.v_integer);
+			level--;
+			safe_printf("};\n");
 			return 0;
 		} else if(expr->expr_type == A1TC_REFERENCE) {
+			char *pcIdentifier = toPascalCaseDup(expr->Identifier);
+			INDENT("message %s {\n", pcIdentifier);
+			free(pcIdentifier);
+			level++;
 			switch (expr->value->type) {
 			case ATV_INTEGER: // INTEGER
-				INDENT("// int32 %s = 1 [(validate.v1.rules).int32.const = ", expr->Identifier);
-				safe_printf(" %d]; //", expr->value->value.v_integer);
+				INDENT("int32 value = 1 [(validate.v1.rules).int32.const = ");
+				safe_printf(" %d];", expr->value->value.v_integer);
 				break;
 			case ATV_STRING:
-				INDENT("// string %s = 1 [(validate.v1.rules).string.const = ", expr->Identifier);
-				safe_printf(" \"%s\"]; //", expr->value->value.string);
+				INDENT("string value = 1 [(validate.v1.rules).string.const = ", expr->Identifier);
+				asn1print_value(expr->value, (enum asn1print_flags) flags);
+				safe_printf("];");
 				break;
 			default:
 				INDENT("// Error");
 			}
+			safe_printf(" // ");
 			asn1print_ref(expr->reference, (enum asn1print_flags) flags);
 			safe_printf("\n");
+			level--;
+			INDENT("}\n");
 
 			return 0;
 		}
 	} else if (expr->expr_type == ASN_BASIC_INTEGER && expr->meta_type == AMT_VALUESET) {
-		INDENT("// int32 %s = 1 [(validate.v1.rules).int32 = {in: [", expr->Identifier);
+		char *pcIdentifier = toPascalCaseDup(expr->Identifier);
+		INDENT("message %s {\n", pcIdentifier);
+		free(pcIdentifier);
+		level++;
+		INDENT("int32 value = 1 [(validate.v1.rules).int32 = {in: [");
 		asn1print_constraint_proto(expr->constraints, flags);
 		safe_printf("]}];\n");
+		level--;
+		INDENT("}\n");
 		return 0;
 	} else if (expr->meta_type == AMT_TYPE && expr->expr_type != ASN_CONSTR_SEQUENCE) {
+		char *pcIdentifier = toPascalCaseDup(expr->Identifier);
+		INDENT("message %s {\n", pcIdentifier);
+		free(pcIdentifier);
+		level++;
 		switch (expr->expr_type) {
 		case ASN_BASIC_INTEGER:
-			INDENT("// int32 %s = 1 [(validate.v1.rules).int32 = ", expr->Identifier);
+			INDENT("int32 value = 1 [(validate.v1.rules).int32 = {");
 			if (expr->constraints != NULL) {
-				asn1print_constraint_proto(expr->constraints, flags);
-			} else {
-				safe_printf("{}");
+				asn1print_constraint_proto(expr->constraints, flags | APF_INT32_VALUE);
 				// TODO: Find why 07 test does not show Reason values
 			}
+			safe_printf("}];\n");
 			break;
 		case ASN_STRING_IA5String:
 		case ASN_STRING_BMPString:
-			INDENT("// string %s = 1 [(validate.v1.rules).string = {", expr->Identifier);
+			INDENT("string value = 1 [(validate.v1.rules).string = {");
 			asn1print_constraint_proto(expr->constraints, flags | APF_STRING_VALUE);
+			safe_printf("}];\n");
 			break;
 		case ASN_BASIC_BOOLEAN:
-			INDENT("// bool %s = 1;\n", expr->Identifier);
-			return 0;
+			INDENT("bool value = 1;\n");
+			break;
 		default:
 			return 0;
 		}
-		safe_printf("];\n");
+		level--;
+		INDENT("}\n");
 		return 0;
 	} else if(expr->expr_type == A1TC_REFERENCE) {
 		se = WITH_MODULE_NAMESPACE(expr->module, expr_ns, asn1f_find_terminal_type_ex(asn, expr_ns, expr));
@@ -166,7 +191,9 @@ asn1print_expr_proto(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *expr, enum
 		level++;
 		INDENT("oneof {\n");
 	} else {
-		INDENT("message %s {\n", expr->Identifier);
+		char *pcIdentifier = toPascalCaseDup(expr->Identifier);
+		INDENT("message %s {\n", pcIdentifier);
+		free(pcIdentifier);
 	}
 
 	level++;
@@ -193,7 +220,7 @@ asn1print_expr_proto(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *expr, enum
 					INDENT("%s", comp->name);
 				}
 			} else if (se->expr_type == A1TC_UNIVERVAL) { // for enum values
-				char *exprUc = toUpperSnakeCaseDup(expr->Identifier);
+				char *exprUc = toSnakeCaseDup(expr->Identifier, 1);
 				if (hasEnumZero == 0) {
 					if (se->value->type == ATV_INTEGER && se->value->value.v_integer != 0) {
 						INDENT("%s_UNDEFINED = 0;\n", exprUc);
@@ -209,6 +236,7 @@ asn1print_expr_proto(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *expr, enum
 					continue;
 				}
 			}
+			char *sCseIdentifier = toSnakeCaseDup(se->Identifier, 0);
 			if(se->expr_type == A1TC_EXTENSIBLE) {
 				extensible = 1;
 				continue;
@@ -217,12 +245,13 @@ asn1print_expr_proto(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *expr, enum
 				// TODO: add this back in
 //				asn1print_ref(se->reference, flags);
 				if(se->Identifier)
-					safe_printf(" %s", se->Identifier);
+					safe_printf(" %s", sCseIdentifier);
 			} else if(se->Identifier) {
-				INDENT("%s", se->Identifier);
+				INDENT("%s", sCseIdentifier);
 			} else {
 				safe_printf("UNHANDLED %s", se->expr_type);
 			}
+			free(sCseIdentifier);
 			safe_printf(" = %d;\n", ++index);
 		}
 		if(extensible) {
@@ -264,6 +293,13 @@ asn1print_constraint_proto(const asn1p_constraint_t *ct, enum asn1print_flags2 f
 		perhaps_subconstraints = 1;
 		break;
 	case ACT_EL_VALUE:
+		if (flags & APF_STRING_VALUE) {
+			safe_printf("min_len: ");
+			asn1print_value(ct->value, (enum asn1print_flags) flags);
+			safe_printf(", max_len: ");
+			asn1print_value(ct->value, (enum asn1print_flags) flags);
+			break;
+		}
 		asn1print_value(ct->value, (enum asn1print_flags) flags);
 		perhaps_subconstraints = 1;
 		break;
@@ -372,10 +408,10 @@ asn1print_constraint_proto(const asn1p_constraint_t *ct, enum asn1print_flags2 f
 	case ACT_CA_INT: symno++;   /* Fall through */
 	case ACT_CA_EXC:
 		{
-			char *symtable[] = { " EXCEPT ", " ^ ", " | ", ",",
+			char *symtable[] = { " EXCEPT ", " ^ ", ",",
 					"", "(" };
 			unsigned int i;
-            if(ct->type == ACT_CA_SET) safe_printf("{");
+//            if(ct->type == ACT_CA_SET) safe_printf("{");
 			for(i = 0; i < ct->el_count; i++) {
 				if(i) safe_printf("%s", symtable[symno]);
 				if(ct->type == ACT_CA_CRC) safe_printf("{");
@@ -384,7 +420,7 @@ asn1print_constraint_proto(const asn1p_constraint_t *ct, enum asn1print_flags2 f
 				if(ct->type == ACT_CA_SET && i+1 < ct->el_count)
 					safe_printf("} ");
 			}
-            if(ct->type == ACT_CA_SET) safe_printf("}");
+//            if(ct->type == ACT_CA_SET) safe_printf("}");
 		}
 		break;
 	case ACT_CA_AEX:
@@ -422,12 +458,25 @@ char* toLowercaseDup(char *mixedCase) {
 	return mixedCaseDup;
 }
 
-// Create new string with in lower_snake_case. Caller must free
-char* toLowerSnakeCaseDup(char *mixedCase) {
-	char *mixedCaseDup = strdup(mixedCase);
-	toLowercase(mixedCaseDup);
-	toSnakecase(mixedCaseDup);
-	return mixedCaseDup;
+// Create new string with in PascalCase. Caller must free
+char* toPascalCaseDup(char *mixedCase) {
+	char *pascalCaseDup = strdup(mixedCase);
+	int i = 0;
+	int removed = 0;
+	while(mixedCase[i]) {
+		if (i == 0) {
+			pascalCaseDup[i] = toupper(mixedCase[i]);
+		} else if (mixedCase[i] == '-') {
+			pascalCaseDup[i-removed] = toupper(mixedCase[i+1]);
+			i++;
+			removed++;
+		} else {
+			pascalCaseDup[i-removed] = mixedCase[i];
+		}
+		i++;
+	}
+	pascalCaseDup[i-removed] = '\0';
+	return pascalCaseDup;
 }
 
 // Replace any lower case chars with upper
@@ -454,23 +503,43 @@ void toSnakecase(char *mixedCase) {
 
 // Create new string with in upper case. Caller must free
 // Any uppercase letters after the first one must be prefixed with '_'
-char* toUpperSnakeCaseDup(const char *mixedCase) {
+char* toSnakeCaseDup(const char *mixedCase, const int toUpper) {
 	int i = 0;
 	int added = 0;
-	char *upperSnakeCase = strdup(mixedCase);
+	int lastChanged = 0;
+	char *snakeCase = strdup(mixedCase);
 	int origlen = strlen(mixedCase);
 	while(mixedCase[i]) {
-		if (i > 0 && mixedCase[i] >= 'A' && mixedCase[i] <= 'Z') {
-			upperSnakeCase = (char *)realloc(upperSnakeCase, origlen + added + 1);
-			upperSnakeCase[i+added] = '_';
+		if ((!toUpper || i > 0) && mixedCase[i] >= 'A' && mixedCase[i] <= 'Z' && lastChanged == 0) {
+			snakeCase = (char *)realloc(snakeCase, origlen + added + 1);
+			snakeCase[i+added] = '_';
+			snakeCase[i+added+1] = tolower(mixedCase[i]);
 			added++;
+			lastChanged = 1;
+		} else if (toUpper && mixedCase[i] >= 'a' && mixedCase[i] <= 'z') {
+			snakeCase[i+added] = toupper(mixedCase[i]);
+			lastChanged = 1;
+		} else if (toUpper && i > 0 && mixedCase[i] >= 'A' && mixedCase[i] <= 'Z') {
+			snakeCase = (char *)realloc(snakeCase, origlen + added + 1);
+			snakeCase[i+added] = '_';
+			snakeCase[i+added+1] = toupper(mixedCase[i]);
+			added++;
+			lastChanged = 1;
+		} else if (!toUpper && i > 0 && mixedCase[i] >= 'A' && mixedCase[i] <= 'Z') {
+			snakeCase[i+added] = tolower(mixedCase[i]);
+			lastChanged = 1;
+		} else if (mixedCase[i] == '-' || mixedCase[i] == '.') {
+			snakeCase[i+added] = '_';
+			lastChanged = 1;
+		} else {
+			snakeCase[i+added] = mixedCase[i];
+			lastChanged = 0;
 		}
-		upperSnakeCase[i+added] = toupper(mixedCase[i]);
 		i++;
 	}
-	upperSnakeCase[i+added] = '\0';
+	snakeCase[i+added] = '\0';
 
-	return upperSnakeCase;
+	return snakeCase;
 }
 
 // Create new string with in upper case. Caller must free

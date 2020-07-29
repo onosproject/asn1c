@@ -11,12 +11,21 @@ ModuleTestConstraint1
 		spelio(9363) software(1) asn1c(5) test(1) 16 1 }
 	DEFINITIONS ::=
 BEGIN
-	IMPORTS Type1, ten FROM ModuleTestConstraint2;
+	IMPORTS Type1, Type2, Type3, Type4, ten FROM ModuleTestConstraint2;
 	
 	-- external reference
 	Type0 ::= IA5String (Type6)
 	Type6 ::= IA5String (Type1)
 	
+	-- reuse types
+	MySequence ::= SEQUENCE {
+		myType0 Type0,
+		myType1 Type1,
+		myType2 Type2,
+		myType3 Type3,
+		myType4 Type4
+	}
+
 END
 
 ModuleTestConstraint2
@@ -24,7 +33,7 @@ ModuleTestConstraint2
 		spelio(9363) software(1) asn1c(5) test(1) 16 2 }
 	DEFINITIONS ::=
 BEGIN
-	EXPORTS Type1, ten;
+	EXPORTS Type1, Type2, Type3, Type4, ten;
 
 	-- external reference
 	Type1 ::= IA5String (SIZE(1..ten,...))
