@@ -8,10 +8,24 @@ package pkg10_int_ok_asn1.v1;
 
 import "validate/v1/validate.proto";
 
-// int32 alpha = 1 [(validate.v1.rules).int32.const = 1];
-// int32 Type1 = 1 [(validate.v1.rules).int32 = {}];
-// int32 Type2 = 1 [(validate.v1.rules).int32 = {}];
-// int32 gamma = 1 [(validate.v1.rules).int32.const =  1]; //Type2
-// int32 delta = 1 [(validate.v1.rules).int32.const =  3]; //Type2
-// int32 check-gamma = 1 [(validate.v1.rules).int32.const = 1];
-// int32 check-delta = 1 [(validate.v1.rules).int32.const = 3];
+message Alpha {
+    int32 value = 1 [(validate.v1.rules).int32.const = 1];
+};
+message Type1 {
+    int32 value = 1 [(validate.v1.rules).int32 = {}];
+}
+message Type2 {
+    int32 value = 1 [(validate.v1.rules).int32 = {}];
+}
+message Gamma {
+    int32 value = 1 [(validate.v1.rules).int32.const =  1]; // Type2
+}
+message Delta {
+    int32 value = 1 [(validate.v1.rules).int32.const =  3]; // Type2
+}
+message CheckGamma {
+    int32 value = 1 [(validate.v1.rules).int32.const = 1];
+};
+message CheckDelta {
+    int32 value = 1 [(validate.v1.rules).int32.const = 3];
+};

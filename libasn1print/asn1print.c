@@ -79,6 +79,7 @@ static int asn1print_tag(const asn1p_expr_t *tc, enum asn1print_flags flags);
 static int asn1print_params(const asn1p_paramlist_t *pl,enum asn1print_flags flags);
 static int asn1print_with_syntax(const asn1p_wsyntx_t *wx, enum asn1print_flags flags);
 static int asn1print_expr_dtd(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *tc, enum asn1print_flags flags, int level);
+static char *escapeQuotesDup(const char *original);
 
 /* Check printf's error code, to be pedantic. */
 static int safe_printf(const char *fmt, ...) {
@@ -192,7 +193,7 @@ asn1print_module(asn1p_t *asn, asn1p_module_t *mod, enum asn1print_flags flags) 
 		return 0;
 	} else if (flags & APF_PRINT_PROTOBUF) {
 		safe_printf("\nsyntax = \"proto3\";\n\n");
-		char *sourceFileLc = toLowerSnakeCaseDup(mod->source_file_name);
+		char *sourceFileLc = toSnakeCaseDup(mod->source_file_name, 0);
 		char *srcNoRelPath = removeRelPath(sourceFileLc);
 
 		if (startNotLcLetter(srcNoRelPath) == 0) {
@@ -341,7 +342,11 @@ asn1print_value(const asn1p_value_t *val, enum asn1print_flags flags) {
 			safe_printf("0"); return 0;
 		}
 		safe_printf("MIN"); return 0;
-	case ATV_MAX: safe_printf("MAX"); return 0;
+	case ATV_MAX:
+		if (flags & 0x100) { // APF_INT32_VALUE
+			safe_printf("%d", INT32_MAX); return 0;
+		}
+		safe_printf("MAX"); return 0;
 	case ATV_FALSE: safe_printf("FALSE"); return 0;
 	case ATV_TRUE: safe_printf("TRUE"); return 0;
 	case ATV_TUPLE:
@@ -360,6 +365,12 @@ asn1print_value(const asn1p_value_t *val, enum asn1print_flags flags) {
 	case ATV_STRING:
 		{
 			char *p = (char *)val->value.string.buf;
+			if (flags & APF_PRINT_PROTOBUF) {
+				char *escaped = escapeQuotesDup(p);
+				safe_printf("\"%s\"", escaped);
+				free(escaped);
+				return 0;
+			}
 			safe_printf("\"");
 			if(strchr(p, '"')) {
 				/* Mask quotes */
@@ -1143,5 +1154,25 @@ asn1print_expr_dtd(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *expr, enum a
 	}
 
 	return 0;
+}
+
+static char *escapeQuotesDup(const char *original) {
+	char *escaped = strdup(original);
+	int origlen = strlen(original);
+	int added = 0;
+	int i = 0;
+	while(original[i]) {
+		if (original[i] == '\"') {
+			escaped = (char *)realloc(escaped, origlen + added + 1);
+			escaped[i+added] = '\\';
+			escaped[i+added+1] = original[i];
+			added++;
+		} else {
+			escaped[i+added] = original[i];
+		}
+		i++;
+	}
+	escaped[origlen+added+1] = '\0';
+	return escaped;
 }
 

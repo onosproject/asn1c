@@ -25,6 +25,7 @@ enum asn1print_flags2 {
 	APF_PRINT_PROTOBUF2	= 0x20,	/* Generate Protobuf */
 	APF_STRING_VALUE = 0x40, /* Dealing with a string rather than numeric - for min_len */
 	APF_BYTES_VALUE = 0x80, /* Dealing with bytes rather than numeric - for min_bytes */
+	APF_INT32_VALUE = 0x100, /* Dealing with int32 - for max*/
 };
 
 int asn1print_expr_proto(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *tc, enum asn1print_flags2 flags, int level);
@@ -34,9 +35,10 @@ char *toLowercaseDup(char *mixedCase);
 char *toLowerSnakeCaseDup(char *mixedCase);
 void toUppercase(char *mixedCase);
 char *toUppercaseDup(char *mixedCase);
+char* toPascalCaseDup(char *mixedCase);
 int startNotLcLetter(char *name);
 void pathToPkg(char *pkg);
 char *removeRelPath(char *path);
-char* toUpperSnakeCaseDup(const char *mixedCase);
+char* toSnakeCaseDup(const char *mixedCase, const int toUpper);
 
 #endif /* LIBASN1PRINT_ASN1PRINTPROTO_H_ */

@@ -5,9 +5,13 @@ diff -a . . 2>/dev/null && diffArgs="-a"		# Assume text files
 diff -u . . 2>/dev/null && diffArgs="$diffArgs -u"	# Unified diff output
 
 finalExitCode=0
-
 if [ "$1" != "regenerate" ]; then
     set -e
+fi
+
+cleanup=1
+if [ "$1" == "nocleanup" ]; then
+    cleanup=0
 fi
 
 LAST_FAILED=""
@@ -54,7 +58,9 @@ EOF
 		finalExitCode=$ec
 	fi
 
-	rm -rf ${refdir}
+	if [ $cleanup == 1 ]; then
+		rm -rf ${refdir}
+	fi
 
 done
 
