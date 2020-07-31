@@ -102,6 +102,7 @@ asn1print_expr_proto(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *expr, enum
 
 	if (expr->expr_type == ASN_BASIC_ENUMERATED) {
 		INDENT("enum %s {\n", expr->Identifier);
+//	} else if (expr->expr_type == A1TC expr->meta_type == AMT_VALUE) {
 	} else if (expr->meta_type == AMT_VALUE) {
 		if (expr->expr_type == ASN_BASIC_INTEGER) {
 			char *pcIdentifier = toPascalCaseDup(expr->Identifier);
@@ -121,15 +122,21 @@ asn1print_expr_proto(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *expr, enum
 			switch (expr->value->type) {
 			case ATV_INTEGER: // INTEGER
 				INDENT("int32 value = 1 [(validate.v1.rules).int32.const = ");
-				safe_printf(" %d];", expr->value->value.v_integer);
+				asn1print_value(expr->value, (enum asn1print_flags) flags);
+				safe_printf("];");
 				break;
 			case ATV_STRING:
 				INDENT("string value = 1 [(validate.v1.rules).string.const = ", expr->Identifier);
 				asn1print_value(expr->value, (enum asn1print_flags) flags);
 				safe_printf("];");
 				break;
+			case ATV_UNPARSED:
+				INDENT("//testing\n");
+				asn1print_value(expr->value, (enum asn1print_flags) flags);
+				INDENT("//testingend\n");
+				break;
 			default:
-				INDENT("// Error");
+				INDENT("// Error. AMT_VALUE with ExprType: %d\n", expr->value->type);
 			}
 			safe_printf(" // ");
 			asn1print_ref(expr->reference, (enum asn1print_flags) flags);
@@ -190,6 +197,8 @@ asn1print_expr_proto(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *expr, enum
 	} else if (expr->expr_type == ASN_CONSTR_CHOICE) {
 		level++;
 		INDENT("oneof {\n");
+	} else if (expr->expr_type == A1TC_CLASSDEF) {
+		INDENT("// class %s {\n", expr->Identifier);
 	} else {
 		char *pcIdentifier = toPascalCaseDup(expr->Identifier);
 		INDENT("message %s {\n", pcIdentifier);

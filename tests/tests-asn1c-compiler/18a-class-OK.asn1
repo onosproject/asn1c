@@ -1,0 +1,55 @@
+
+-- OK: Everything is fine
+
+-- iso.org.dod.internet.private.enterprise (1.3.6.1.4.1)
+-- .spelio.software.asn1c.test (9363.1.5.1)
+-- .18
+
+ModuleTestClass
+	{ iso org(3) dod(6) internet(1) private(4) enterprise(1)
+		spelio(9363) software(1) asn1c(5) test(1) 18 }
+	DEFINITIONS ::=
+BEGIN
+	
+	Pair ::= SEQUENCE {a INTEGER, b INTEGER}
+
+	FUNCTION ::= CLASS {
+		&code			INTEGER (0..MAX) UNIQUE,
+		&ArgType		,
+		&ResultType		DEFAULT NULL
+	}
+	
+	WITH SYNTAX {
+		ARGUMENT TYPE &ArgType,
+		[RESULT TYPE &ResultType,]
+		CODE &code
+	}
+
+	-- Add two integers - take 2 args, return int
+	operator-plus FUNCTION ::= {
+		ARGUMENT TYPE Pair,
+		RESULT TYPE	INTEGER,
+		CODE 1
+	}
+	
+	-- square an integer - take one arg, return int
+	operator-square FUNCTION ::= {
+		ARGUMENT TYPE INTEGER,
+		RESULT TYPE	INTEGER,
+		CODE 2
+	}
+	
+	-- square root of an integer, take one arg, return real
+	operator-root FUNCTION ::= {
+		ARGUMENT TYPE INTEGER,
+		RESULT TYPE	REAL,
+		CODE 3
+	}
+
+	FUNCTIONS FUNCTION ::= {
+		operator-plus 	|
+		operator-square |
+		operator-root
+	}
+
+END

@@ -18,10 +18,10 @@ message Type2 {
     int32 value = 1 [(validate.v1.rules).int32 = {}];
 }
 message Gamma {
-    int32 value = 1 [(validate.v1.rules).int32.const =  1]; // Type2
+    int32 value = 1 [(validate.v1.rules).int32.const = 1]; // Type2
 }
 message Delta {
-    int32 value = 1 [(validate.v1.rules).int32.const =  3]; // Type2
+    int32 value = 1 [(validate.v1.rules).int32.const = 3]; // Type2
 }
 message CheckGamma {
     int32 value = 1 [(validate.v1.rules).int32.const = 1];
