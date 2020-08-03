@@ -9,19 +9,24 @@ package pkg16a_constraint_ok_asn1.v1;
 import "pkg16a_constraint_ok_asn1/v1/moduletestconstraint2.proto";
 import "validate/v1/validate.proto";
 
+// range of Integer from 16a-constraint-OK.asn1:17
 message Type0 {
     string value = 1 [(validate.v1.rules).string = {min_len: 1, max_len: 10}];
-}
+};
+
+// range of Integer from 16a-constraint-OK.asn1:18
 message Type6 {
     string value = 1 [(validate.v1.rules).string = {min_len: 1, max_len: 10}];
-}
+};
+
+// sequence from 16a-constraint-OK.asn1:22
 message MySequence {
-    Type0     my_type0 = 1;
-    Type1     my_type1 = 2;
-    Type2     my_type2 = 3;
-    Type3     my_type3 = 4;
-    Type4     my_type4 = 5;
-}
+    Type0 my_type0 = 1;
+    Type1 my_type1 = 2;
+    Type2 my_type2 = 3;
+    Type3 my_type3 = 4;
+    Type4 my_type4 = 5;
+};
 
 
 ////////////////////// moduletestconstraint2.proto //////////////////////
@@ -34,24 +39,38 @@ package pkg16a_constraint_ok_asn1.v1;
 
 import "validate/v1/validate.proto";
 
+// range of Integer from 16a-constraint-OK.asn1:39
 message Type1 {
     string value = 1 [(validate.v1.rules).string = {min_len: 1, max_len: 10}];
-}
+};
+
+// range of Integer from 16a-constraint-OK.asn1:40
 message Type2 {
     string value = 1 [(validate.v1.rules).string = {min_len: 0, max_len: 4}];
-}
+};
+
+// range of Integer from 16a-constraint-OK.asn1:41
 message Type3 {
     string value = 1 [(validate.v1.rules).string = {min_len: 1, max_len: 1}];
-}
+};
+
+// range of Integer from 16a-constraint-OK.asn1:42
 message Type4 {
     int32 value = 1 [(validate.v1.rules).int32 = {gte: 1, lte: 2147483647}];
-}
+};
+
+// range of Integer from 16a-constraint-OK.asn1:43
 message Type5 {
     bool value = 1;
-}
+};
+
+// constant Integer from 16a-constraint-OK.asn1:45
 message Ten {
     int32 value = 1 [(validate.v1.rules).int32.const = 10];
 };
+
+// reference from 16a-constraint-OK.asn1:47
 message V1 {
     string value = 1 [(validate.v1.rules).string.const = "#value with \"double quotes\""]; // Type1
-}
+};
+

@@ -9,23 +9,32 @@ package pkg14a_resolver_ok_asn1.v1;
 import "pkg14a_resolver_ok_asn1/v1/moduletestresolver3.proto";
 import "validate/v1/validate.proto";
 
+// reference from 14a-resolver-OK.asn1:18
 message Alpha {
     int32 value = 1 [(validate.v1.rules).int32.const = 2]; // Enumeration
-}
+};
+
+// reference from 14a-resolver-OK.asn1:19
 message Other {
     int32 value = 1 [(validate.v1.rules).int32.const = 1]; // Enumeration
-}
-message Struct {
-    Enumeration     member1 = 1;
-    Enumeration     member2 = 2;
-}
+};
 
+// sequence from 14a-resolver-OK.asn1:22
+message Struct {
+    Enumeration member1 = 1;
+    Enumeration member2 = 2;
+};
+
+// constant Integer from 14a-resolver-OK.asn1:32
 message CheckAlpha {
     int32 value = 1 [(validate.v1.rules).int32.const = 2];
 };
+
+// constant Integer from 14a-resolver-OK.asn1:33
 message CheckOther {
     int32 value = 1 [(validate.v1.rules).int32.const = 1];
 };
+
 
 ////////////////////// moduletestresolver3.proto //////////////////////
 // Protobuf generated from /14a-resolver-OK.asn1 by asn1c-0.9.29
@@ -38,17 +47,22 @@ package pkg14a_resolver_ok_asn1.v1;
 import "pkg14a_resolver_ok_asn1/v1/hiddenmodule.proto";
 import "validate/v1/validate.proto";
 
-message Beta {
-    int32 value = 1 [(validate.v1.rules).int32.const = 2]; // HiddenEnum
-}
-message Gamma {
-    int32 value = 1 [(validate.v1.rules).int32.const = 1]; // Enumeration
-}
+// enumerated from 14a-resolver-OK.asn1:48
 enum Enumeration {
-    ENUMERATION_UNDEFINED = 0;
+    ENUMERATION_UNDEFINED = 0; // auto generated
     ENUMERATION_A = 1;
     ENUMERATION_B = 2;
-}
+};
+
+// reference from 14a-resolver-OK.asn1:45
+message Beta {
+    int32 value = 1 [(validate.v1.rules).int32.const = 2]; // HiddenEnum
+};
+
+// reference from 14a-resolver-OK.asn1:46
+message Gamma {
+    int32 value = 1 [(validate.v1.rules).int32.const = 1]; // Enumeration
+};
 
 
 ////////////////////// hiddenmodule.proto //////////////////////
@@ -61,9 +75,10 @@ package pkg14a_resolver_ok_asn1.v1;
 
 import "validate/v1/validate.proto";
 
+// enumerated from 14a-resolver-OK.asn1:59
 enum HiddenEnum {
-    HIDDEN_ENUM_UNDEFINED = 0;
+    HIDDEN_ENUM_UNDEFINED = 0; // auto generated
     HIDDEN_ENUM_A = 1;
     HIDDEN_ENUM_B = 2;
-}
+};
 

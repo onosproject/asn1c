@@ -8,53 +8,31 @@ package pkg18a_class_ok_asn1.v1;
 
 import "validate/v1/validate.proto";
 
+// sequence from 18a-class-OK.asn1:14
 message Pair {
-    int32     a = 1;
-    int32     b = 2;
-}
+    int32 a = 1;
+    int32 b = 2;
+};
 
+// concrete instance of class FUNCTION from 18a-class-OK.asn1:31
 message OperatorPlus {
-	Pair argument_type_pair = 1;
-	Integer result_type_integer = 2;
-	Code1 code_1 = 3;
-}
+    int32 code_1 = 1 [(validate.v1.rules).int32.const = 1];
+    Pair arg_type_pair = 2;
+    int32 result_type_integer = 3;
+};
 
+// concrete instance of class FUNCTION from 18a-class-OK.asn1:38
 message OperatorSquare {
-	Integer argument_type_integer = 1;
-	Integer result_type_integer = 2;
-	Code2 code_2 = 3;
-}
+    int32 code_2 = 1 [(validate.v1.rules).int32.const = 2];
+    int32 arg_type_integer = 2;
+    int32 result_type_integer = 3;
+};
 
+// concrete instance of class FUNCTION from 18a-class-OK.asn1:45
 message OperatorRoot {
-	Integer argument_type_integer = 1;
-	Real result_type_real = 2;
-	Code3 code_3 = 3;
-}
+    int32 code_3 = 1 [(validate.v1.rules).int32.const = 3];
+    int32 arg_type_integer = 2;
+    int32 unused_integer = 3;
+    float result_type_real = 4;
+};
 
-message Functions {
-	oneof function {
-		OperatorPlus operator_plus = 1;
-		OperatorSquare operator_square = 2;
-		OperatorRoot operator_root = 3;
-	}
-}
-
-message Integer {
-	int32 value = 1;
-}
-
-message Real {
-	float value = 1;
-}
-
-message Code1 {
-	int32 value = 1 [(validate.v1.rules).int32.const =  1];
-}
-
-message Code2 {
-	int32 value = 1 [(validate.v1.rules).int32.const =  2];
-}
-
-message Code3 {
-	int32 value = 1 [(validate.v1.rules).int32.const =  3];
-}

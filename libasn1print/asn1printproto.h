@@ -15,6 +15,8 @@
 #ifndef LIBASN1PRINT_ASN1PRINTPROTO_H_
 #define LIBASN1PRINT_ASN1PRINTPROTO_H_
 
+#include "asn1prototypes.h"
+
 enum asn1print_flags2 {
 	APF_NOFLAGS2,
 	APF_NOINDENT2		= 0x01,	/* Disable indentation */
@@ -28,17 +30,8 @@ enum asn1print_flags2 {
 	APF_INT32_VALUE = 0x100, /* Dealing with int32 - for max*/
 };
 
-int asn1print_expr_proto(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *tc, enum asn1print_flags2 flags, int level);
-void toLowercase(char *mixedCase);
-void toSnakecase(char *mixedCase);
-char *toLowercaseDup(char *mixedCase);
-char *toLowerSnakeCaseDup(char *mixedCase);
-void toUppercase(char *mixedCase);
-char *toUppercaseDup(char *mixedCase);
-char* toPascalCaseDup(char *mixedCase);
-int startNotLcLetter(char *name);
-void pathToPkg(char *pkg);
-char *removeRelPath(char *path);
-char* toSnakeCaseDup(const char *mixedCase, const int toUpper);
+int asn1print_expr_proto(asn1p_module_t *mod, asn1p_expr_t *tc,
+		proto_msg_t **message, size_t *messages, proto_enum_t **protoenum, size_t *enums,
+		enum asn1print_flags2 flags);
 
 #endif /* LIBASN1PRINT_ASN1PRINTPROTO_H_ */

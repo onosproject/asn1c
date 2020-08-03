@@ -16,11 +16,13 @@ BEGIN
 	FUNCTION ::= CLASS {
 		&code			INTEGER (0..MAX) UNIQUE,
 		&ArgType		,
+		&Unused         OPTIONAL,
 		&ResultType		DEFAULT NULL
 	}
 	
 	WITH SYNTAX {
 		ARGUMENT TYPE &ArgType,
+		[UNUSED TYPE &Unused,]
 		[RESULT TYPE &ResultType,]
 		CODE &code
 	}
@@ -42,6 +44,7 @@ BEGIN
 	-- square root of an integer, take one arg, return real
 	operator-root FUNCTION ::= {
 		ARGUMENT TYPE INTEGER,
+		UNUSED TYPE INTEGER,
 		RESULT TYPE	REAL,
 		CODE 3
 	}

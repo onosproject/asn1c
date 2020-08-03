@@ -1,6 +1,7 @@
 ////////////////////// moduletestempty.proto //////////////////////
 // Protobuf generated from /00-empty-OK.asn1 by asn1c-0.9.29
-// ModuleTestEmpty 
+// ModuleTestEmpty
+
 syntax = "proto3";
 
 package pkg00_empty_ok_asn1.v1;
