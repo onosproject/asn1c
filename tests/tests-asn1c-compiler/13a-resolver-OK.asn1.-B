@@ -9,18 +9,26 @@ package pkg13a_resolver_ok_asn1.v1;
 import "pkg13a_resolver_ok_asn1/v1/moduletestresolver2.proto"; // { iso org(3) dod(6) internet(1) private(4) enterprise(1) spelio(9363) software(1) asn1c(5) test(1) 13 2 }
 import "validate/v1/validate.proto";
 
+// reference from 13a-resolver-OK.asn1:20
 message Alpha {
-    int32 value = 1 [(validate.v1.rules).int32.const =  123]; // IntegerType
-}
+    int32 value = 1 [(validate.v1.rules).int32.const = 123]; // IntegerType
+};
+
+// reference from 13a-resolver-OK.asn1:21
 message Alpha2 {
-    int32 value = 1 [(validate.v1.rules).int32.const =  123]; // ModuleTestResolver2.IntegerType
-}
+    int32 value = 1 [(validate.v1.rules).int32.const = 123]; // ModuleTestResolver2.IntegerType
+};
+
+// constant Integer from 13a-resolver-OK.asn1:29
 message CheckAlpha {
     int32 value = 1 [(validate.v1.rules).int32.const = 123];
 };
+
+// constant Integer from 13a-resolver-OK.asn1:30
 message CheckAlpha2 {
     int32 value = 1 [(validate.v1.rules).int32.const = 123];
 };
+
 
 ////////////////////// moduletestresolver2.proto //////////////////////
 // Protobuf generated from /13a-resolver-OK.asn1 by asn1c-0.9.29
@@ -32,12 +40,18 @@ package pkg13a_resolver_ok_asn1.v1;
 
 import "validate/v1/validate.proto";
 
+// reference from 13a-resolver-OK.asn1:41
 message Beta {
-    int32 value = 1 [(validate.v1.rules).int32.const =  123]; // HiddenType
-}
+    int32 value = 1 [(validate.v1.rules).int32.const = 123]; // HiddenType
+};
+
+// range of Integer from 13a-resolver-OK.asn1:45
 message HiddenType {
-    int32 value = 1 [(validate.v1.rules).int32 = {}];
-}
+    int32 value = 1;
+};
+
+// range of Integer from 13a-resolver-OK.asn1:47
 message IntegerType {
-    int32 value = 1 [(validate.v1.rules).int32 = {}];
-}
+    int32 value = 1;
+};
+

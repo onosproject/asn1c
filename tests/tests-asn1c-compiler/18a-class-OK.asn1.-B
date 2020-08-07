@@ -1,0 +1,38 @@
+////////////////////// moduletestclass.proto //////////////////////
+// Protobuf generated from /18a-class-OK.asn1 by asn1c-0.9.29
+// ModuleTestClass { iso org(3) dod(6) internet(1) private(4) enterprise(1) spelio(9363) software(1) asn1c(5) test(1) 18 }
+
+syntax = "proto3";
+
+package pkg18a_class_ok_asn1.v1;
+
+import "validate/v1/validate.proto";
+
+// sequence from 18a-class-OK.asn1:14
+message Pair {
+    int32 a = 1;
+    int32 b = 2;
+};
+
+// concrete instance of class FUNCTION from 18a-class-OK.asn1:31
+message OperatorPlus {
+    int32 code_1 = 1 [(validate.v1.rules).int32.const = 1];
+    Pair arg_type_pair = 2;
+    int32 result_type_integer = 3;
+};
+
+// concrete instance of class FUNCTION from 18a-class-OK.asn1:38
+message OperatorSquare {
+    int32 code_2 = 1 [(validate.v1.rules).int32.const = 2];
+    int32 arg_type_integer = 2;
+    int32 result_type_integer = 3;
+};
+
+// concrete instance of class FUNCTION from 18a-class-OK.asn1:45
+message OperatorRoot {
+    int32 code_3 = 1 [(validate.v1.rules).int32.const = 3];
+    int32 arg_type_integer = 2;
+    int32 unused_integer = 3;
+    float result_type_real = 4;
+};
+

@@ -56,6 +56,7 @@
 
 #include "asn1print.h"
 #include "asn1printproto.h"
+#include "asn1protooutput.h"
 
 static abuf all_output_;
 
@@ -79,7 +80,6 @@ static int asn1print_tag(const asn1p_expr_t *tc, enum asn1print_flags flags);
 static int asn1print_params(const asn1p_paramlist_t *pl,enum asn1print_flags flags);
 static int asn1print_with_syntax(const asn1p_wsyntx_t *wx, enum asn1print_flags flags);
 static int asn1print_expr_dtd(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *tc, enum asn1print_flags flags, int level);
-static char *escapeQuotesDup(const char *original);
 
 /* Check printf's error code, to be pedantic. */
 static int safe_printf(const char *fmt, ...) {
@@ -156,28 +156,17 @@ static int
 asn1print_module(asn1p_t *asn, asn1p_module_t *mod, enum asn1print_flags flags) {
 	asn1p_expr_t *tc;
 	asn1p_xports_t *tx;
-
 	uint16_t max_line_len = 72;
 
 	if(flags & APF_PRINT_XML_DTD) {
 		safe_printf("<!-- ASN.1 module\n");
-	} else if(flags & APF_PRINT_PROTOBUF) {
-		char *moduleNameLc = toLowercaseDup(mod->ModuleName);
-		safe_printf("////////////////////// %s.proto //////////////////////\n", moduleNameLc);
-		free(moduleNameLc);
-		safe_printf("// Protobuf generated");
-		if(mod->source_file_name && strrchr(mod->source_file_name, '/') != NULL) {
-			safe_printf(" from %s ", strrchr(mod->source_file_name, '/'));
-		} else {
-			safe_printf(" from /%s ", mod->source_file_name);
-		}
-		safe_printf("by asn1c-%s\n// ", VERSION);
-		max_line_len = 1024;
 	}
-	safe_printf("%s ", mod->ModuleName);
-	if(mod->module_oid) {
+	if (mod->module_oid && !(flags & APF_PRINT_PROTOBUF)) {
+		safe_printf("%s ", mod->ModuleName);
 		asn1print_oid(strlen(mod->ModuleName), mod->module_oid, flags, max_line_len);
 		safe_printf("\n");
+	} else if (!(flags & APF_PRINT_PROTOBUF)) {
+		safe_printf("%s ", mod->ModuleName);
 	}
 
 	if(flags & APF_PRINT_XML_DTD) {
@@ -192,37 +181,55 @@ asn1print_module(asn1p_t *asn, asn1p_module_t *mod, enum asn1print_flags flags) 
 
 		return 0;
 	} else if (flags & APF_PRINT_PROTOBUF) {
-		safe_printf("\nsyntax = \"proto3\";\n\n");
-		char *sourceFileLc = toSnakeCaseDup(mod->source_file_name, 0);
-		char *srcNoRelPath = removeRelPath(sourceFileLc);
-
-		if (startNotLcLetter(srcNoRelPath) == 0) {
-			safe_printf("package %s.v1;\n\n", srcNoRelPath);
-		} else {
-			safe_printf("package pkg%s.v1;\n\n", srcNoRelPath);
-		}
+		proto_module_t *proto_module = malloc(sizeof(proto_module_t));
+		memset(proto_module, 0, sizeof(proto_module_t));
+		proto_module->message = calloc(0, sizeof(proto_msg_t *));
+		proto_module->protoenum = calloc(0, sizeof(proto_enum_t *));
+		proto_module->import = calloc(0, sizeof(proto_import_t *));
+		strcpy(proto_module->srcfilename, mod->source_file_name);
+		strcpy(proto_module->modulename, mod->ModuleName);
+		proto_module->oid = mod->module_oid;
 
 		TQ_FOR(tx, &(mod->imports), xp_next) {
-			char* importName = toLowercaseDup(tx->fromModuleName);
-			if (startNotLcLetter(srcNoRelPath) == 0) {
-				safe_printf("import \"%s/v1/%s.proto\";", srcNoRelPath, importName);
-			} else {
-				safe_printf("import \"pkg%s/v1/%s.proto\";", srcNoRelPath, importName);
-			}
-			free(importName);
+			proto_import_t *imp = proto_create_import(tx->fromModuleName, NULL);
 			if (tx->identifier.oid != NULL) {
-				safe_printf(" // ");
-				asn1print_oid(tx->identifier.oid->arcs_count, tx->identifier.oid, flags, max_line_len);
+				imp->oid = tx->identifier.oid;
 			}
-			safe_printf("\n");
+			int existing_size = proto_module->imports;
+			proto_module->import = realloc(proto_module->import, (existing_size+1)*sizeof(proto_import_t *));
+			proto_module->import[existing_size] = imp;
+			proto_module->imports = existing_size + 1;
 		}
-		safe_printf("import \"validate/v1/validate.proto\";\n\n");
-		free(sourceFileLc);
 
 		TQ_FOR(tc, &(mod->members), next) {
-			asn1print_expr_proto(asn, mod, tc, (enum asn1print_flags2)flags, 0);
+			proto_msg_t **message = calloc(0, sizeof(proto_msg_t *));
+			size_t messages = 0;
+			proto_enum_t **protoenum = calloc(0, sizeof(proto_enum_t *));
+			size_t protoenums = 0;
+			asn1print_expr_proto(mod, tc,
+					message, &messages, protoenum, &protoenums,
+					(enum asn1print_flags2)flags);
+
+			if (messages > 0) {
+				size_t existing_msgs = proto_module->messages;
+				proto_module->message = realloc(proto_module->message, (existing_msgs + messages)*sizeof(proto_msg_t *));
+				for (int i = 0; i < (int)messages; i++) {
+					proto_module->message[existing_msgs + i] = message[i];
+				}
+				proto_module->messages = existing_msgs + messages;
+			}
+
+			if (protoenums > 0) {
+				size_t existing_enums = proto_module->enums;
+				proto_module->protoenum = realloc(proto_module->protoenum, (existing_enums + protoenums)*sizeof(proto_enum_t *));
+				for (int i = 0; i < (int)protoenums; i++) {
+					proto_module->protoenum[existing_enums + i] = protoenum[i];
+				}
+				proto_module->enums = existing_enums + protoenums;
+			}
 		}
 
+		proto_print_msg(proto_module, (enum asn1print_flags2)flags, 0, 1);
 		return 0;
 	}
 
@@ -365,12 +372,6 @@ asn1print_value(const asn1p_value_t *val, enum asn1print_flags flags) {
 	case ATV_STRING:
 		{
 			char *p = (char *)val->value.string.buf;
-			if (flags & APF_PRINT_PROTOBUF) {
-				char *escaped = escapeQuotesDup(p);
-				safe_printf("\"%s\"", escaped);
-				free(escaped);
-				return 0;
-			}
 			safe_printf("\"");
 			if(strchr(p, '"')) {
 				/* Mask quotes */
@@ -1154,25 +1155,5 @@ asn1print_expr_dtd(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *expr, enum a
 	}
 
 	return 0;
-}
-
-static char *escapeQuotesDup(const char *original) {
-	char *escaped = strdup(original);
-	int origlen = strlen(original);
-	int added = 0;
-	int i = 0;
-	while(original[i]) {
-		if (original[i] == '\"') {
-			escaped = (char *)realloc(escaped, origlen + added + 1);
-			escaped[i+added] = '\\';
-			escaped[i+added+1] = original[i];
-			added++;
-		} else {
-			escaped[i+added] = original[i];
-		}
-		i++;
-	}
-	escaped[origlen+added+1] = '\0';
-	return escaped;
 }
 
