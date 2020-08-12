@@ -49,10 +49,9 @@ BEGIN
 		CODE 3
 	}
 
-	FUNCTIONS FUNCTION ::= {
-		operator-plus 	|
-		operator-square |
-		operator-root
+	-- An information object set - see dubisson Chap 15.5
+	Functions FUNCTION ::= {
+		operator-plus | operator-square | operator-root
 	}
 
 END
