@@ -63,7 +63,8 @@ static size_t safe_fwrite(const void *ptr, size_t size) {
     return ret;
 }
 
-static char *escapeQuotesDup(const char *original) {
+static char
+*escapeQuotesDup(const char *original) {
 	int origlen = strlen(original);
 	char *escaped = strdup(original);
 	int added = 0;
@@ -81,6 +82,20 @@ static char *escapeQuotesDup(const char *original) {
 	}
 	escaped[origlen+added] = '\0';
 	return escaped;
+}
+
+static char *
+proto_extract_params(asn1p_expr_t *expr) {
+	char *params_comments = malloc(PROTO_COMMENTS_CHARS);
+	memset(params_comments, 0, PROTO_COMMENTS_CHARS);
+	char temp[PROTO_COMMENTS_CHARS] = {};
+	for (int i=0; i < expr->lhs_params->params_count; i++ ){
+		struct asn1p_param_s *param = (expr->lhs_params->params) + (i * sizeof(struct asn1p_param_s *));
+		sprintf(temp, "\nParam %s:%s", param->governor->components->name, param->argument);
+		strncat(params_comments, temp, PROTO_COMMENTS_CHARS);
+	}
+
+	return params_comments;
 }
 
 int
@@ -156,9 +171,19 @@ asn1print_expr_proto(asn1p_module_t *mod, asn1p_expr_t *expr,
 		proto_messages_add_msg(message, messages, msg);
 
 		return 0;
-	} else if (expr->meta_type == AMT_TYPE && expr->expr_type != ASN_CONSTR_SEQUENCE) {
+	} else if (expr->meta_type == AMT_TYPE &&
+			expr->expr_type != ASN_CONSTR_SEQUENCE &&
+			expr->expr_type != ASN_CONSTR_SEQUENCE_OF &&
+			expr->expr_type != ASN_CONSTR_CHOICE) {
+
 		proto_msg_t *msg = proto_create_message(expr->Identifier,
 				"range of Integer from %s:%d", mod->source_file_name, expr->_lineno);
+		if (expr->lhs_params != NULL) {
+			char *param_comments = proto_extract_params(expr);
+			strcat(msg->comments, param_comments);
+			free(param_comments);
+		}
+
 		proto_msg_def_t *msgelem = proto_create_msg_elem("value", "int32", NULL);
 		switch (expr->expr_type) {
 		case ASN_BASIC_INTEGER:
@@ -198,20 +223,49 @@ asn1print_expr_proto(asn1p_module_t *mod, asn1p_expr_t *expr,
 //			return 0;
 //		}
 //		expr = se;
-	} else if (expr->expr_type == ASN_CONSTR_SEQUENCE) {
+	} else if (expr->meta_type == AMT_TYPE &&
+			(expr->expr_type == ASN_CONSTR_SEQUENCE ||
+					expr->expr_type == ASN_CONSTR_SEQUENCE_OF ||
+					expr->expr_type == ASN_CONSTR_CHOICE)) {
 		proto_msg_t *msg = proto_create_message(expr->Identifier,
 				"sequence from %s:%d", mod->source_file_name, expr->_lineno);
+		if (expr->lhs_params != NULL) {
+			char *param_comments = proto_extract_params(expr);
+			strcat(msg->comments, param_comments);
+			free(param_comments);
+		}
+
 		proto_process_children(expr, msg);
 
 		proto_messages_add_msg(message, messages, msg);
 
-	} else if (expr->expr_type == ASN_CONSTR_CHOICE) {
-//		INDENT("oneof {\n");
 	} else if (expr->expr_type == A1TC_CLASSDEF) {
-//		INDENT("// class %s {\n\n", expr->Identifier);
+		// No equivalent of class in Protobuf - ignore
+		return 0;
+	} else if (expr->meta_type == AMT_TYPEREF) {
+		proto_msg_t *msg = proto_create_message(expr->Identifier,
+				"reference from %s:%d", mod->source_file_name, expr->_lineno);
+		if (expr->lhs_params != NULL) {
+			char *param_comments = proto_extract_params(expr);
+			strcat(msg->comments, param_comments);
+			free(param_comments);
+		}
+
+		proto_msg_def_t *msgelem = proto_create_msg_elem("value", "int32", NULL);
+		if (expr->reference->comp_count == 1) {
+			struct asn1p_ref_component_s *comp = expr->reference->components;
+			strcpy(msgelem->type, comp->name);
+		}
+		proto_msg_add_elem(msg, msgelem);
+
+		proto_messages_add_msg(message, messages, msg);
+		return 0;
+	} else if (expr->meta_type == AMT_VALUESET) {
+		// No equivalent of valueset in Protobuf - ignore
 		return 0;
 	} else {
-//		INDENT("message %s {\n", expr->Identifier);
+		printf("\n\n//////// ERROR Unhandled expr %s. Meta type: %d. Expr type: %d /////\n\n",
+				expr->Identifier, expr->meta_type, expr->expr_type);
 	}
 	return 0;
 }
@@ -234,6 +288,7 @@ proto_process_enumerated(asn1p_expr_t *expr, proto_enum_t **protoenum) {
 static int
 proto_process_children(asn1p_expr_t *expr, proto_msg_t *msgdef) {
 	asn1p_expr_t *se;
+	asn1p_expr_t *se2;
 
 	if(TQ_FIRST(&expr->members)) {
 		int extensible = 0;
@@ -245,9 +300,27 @@ proto_process_children(asn1p_expr_t *expr, proto_msg_t *msgdef) {
 				strcpy(elem->type, "BitString");
 			} else if (se->expr_type == ASN_BASIC_OBJECT_IDENTIFIER) {
 				strcpy(elem->type, "BasicOid");
-			} else if (se->expr_type == ASN_CONSTR_SEQUENCE_OF) {
-//				INDENT("repeated ");
-//				safe_printf("TODO find reference ");
+			} else if (se->expr_type == ASN_BASIC_BOOLEAN) {
+				strcpy(elem->type, "bool");
+			} else if (se->expr_type == ASN_STRING_UTF8String ||
+					se->expr_type == ASN_STRING_TeletexString) {
+				strcpy(elem->type, "string");
+				if (se->constraints != NULL) {
+					char *constraint = proto_constraint_print(se->constraints, APF_STRING_VALUE);
+					sprintf(elem->rules, "string = {%s}", constraint);
+					free(constraint);
+				}
+			} else if (se->meta_type == AMT_TYPE && se->expr_type == ASN_CONSTR_SEQUENCE_OF) {
+				elem->repeated = 1;
+				se2 = TQ_FIRST(&se->members); // Find the type
+				if (se2->expr_type == A1TC_REFERENCE && se2->meta_type == AMT_TYPEREF) {
+					if (se2->reference->comp_count == 1) {
+						struct asn1p_ref_component_s *comp = se2->reference->components;
+						strcpy(elem->type, comp->name);
+					}
+				}
+				printf("Type for %s is %d", se->Identifier, se2->expr_type);
+				elem->repeated = 1;
 			} else if (se->expr_type == A1TC_REFERENCE && se->meta_type == AMT_TYPEREF) {
 				struct asn1p_ref_component_s *comp = se->reference->components;
 				if (se->reference->comp_count == 2) {
@@ -342,7 +415,14 @@ proto_constraint_print(const asn1p_constraint_t *ct, enum asn1print_flags2 flags
 		val = proto_value_print(ct->range_start, (enum asn1print_flags) flags);
 		strcat(result, val);
 		free(val);
-		strcat(result, ", ");
+
+		val = proto_value_print(ct->range_stop, (enum asn1print_flags) flags);
+		if (strlen(val) == 0) {
+			free(val);
+			break;
+		} else {
+			strcat(result, ", ");
+		}
 		switch(ct->type) {
 		case ACT_EL_RANGE:
 		case ACT_EL_LLRANGE:
@@ -362,7 +442,6 @@ proto_constraint_print(const asn1p_constraint_t *ct, enum asn1print_flags2 flags
 			break;
 		default: strcat(result, "?..?"); break;
 		}
-		val = proto_value_print(ct->range_stop, (enum asn1print_flags) flags);
 		strcat(result, val);
 		free(val);
 		break;
