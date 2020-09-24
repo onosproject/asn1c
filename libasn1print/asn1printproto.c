@@ -90,7 +90,7 @@ proto_extract_params(asn1p_expr_t *expr) {
 	memset(params_comments, 0, PROTO_COMMENTS_CHARS);
 	char temp[PROTO_COMMENTS_CHARS] = {};
 	for (int i=0; i < expr->lhs_params->params_count; i++ ){
-		struct asn1p_param_s *param = (expr->lhs_params->params) + (i * sizeof(struct asn1p_param_s *));
+		struct asn1p_param_s *param = &expr->lhs_params->params[i];
 		sprintf(temp, "\nParam %s:%s", param->governor->components->name, param->argument);
 		strncat(params_comments, temp, PROTO_COMMENTS_CHARS);
 	}
@@ -225,7 +225,6 @@ asn1print_expr_proto(asn1p_module_t *mod, asn1p_expr_t *expr,
 //		expr = se;
 	} else if (expr->meta_type == AMT_TYPE &&
 			(expr->expr_type == ASN_CONSTR_SEQUENCE ||
-					expr->expr_type == ASN_CONSTR_SEQUENCE_OF ||
 					expr->expr_type == ASN_CONSTR_CHOICE)) {
 		proto_msg_t *msg = proto_create_message(expr->Identifier,
 				"sequence from %s:%d", mod->source_file_name, expr->_lineno);
@@ -239,7 +238,20 @@ asn1print_expr_proto(asn1p_module_t *mod, asn1p_expr_t *expr,
 
 		proto_messages_add_msg(message, messages, msg);
 
-	} else if (expr->expr_type == A1TC_CLASSDEF) {
+    } else if (expr->meta_type == AMT_TYPE &&
+               (expr->expr_type == ASN_CONSTR_SEQUENCE_OF ||
+                expr->expr_type == ASN_CONSTR_CHOICE)) {
+        proto_msg_t *msg = proto_create_message(expr->Identifier,
+                                                "sequence from %s:%d", mod->source_file_name, expr->_lineno);
+        if (expr->lhs_params != NULL) {
+            char *param_comments = proto_extract_params(expr);
+            strcat(msg->comments, param_comments);
+            free(param_comments);
+        }
+
+        proto_messages_add_msg(message, messages, msg);
+
+    } else if (expr->expr_type == A1TC_CLASSDEF) {
 		// No equivalent of class in Protobuf - ignore
 		return 0;
 	} else if (expr->meta_type == AMT_TYPEREF) {
