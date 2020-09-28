@@ -39,8 +39,7 @@ static char *proto_constraint_print(const asn1p_constraint_t *ct, enum asn1print
 static char *proto_value_print(const asn1p_value_t *val, enum asn1print_flags flags);
 static int proto_process_enumerated(asn1p_expr_t *expr, proto_enum_t **protoenum);
 
-static int proto_process_children(asn1p_expr_t *expr, proto_msg_t *msgdef,
-                                  enum asn1print_flags2 flags);
+static int proto_process_children(asn1p_expr_t *expr, proto_msg_t *msgdef, int repeated);
 static int asn1extract_columns(asn1p_expr_t *expr,
 		proto_msg_t **proto_msgs, size_t *proto_msg_count,
 		char *mod_file);
@@ -235,7 +234,7 @@ asn1print_expr_proto(asn1p_module_t *mod, asn1p_expr_t *expr,
 			strcat(msg->comments, param_comments);
 			free(param_comments);
 		}
-		proto_process_children(expr, msg, flags);
+		proto_process_children(expr, msg, expr->expr_type == ASN_CONSTR_SEQUENCE_OF);
 
 		proto_messages_add_msg(message, messages, msg);
 
@@ -288,7 +287,7 @@ proto_process_enumerated(asn1p_expr_t *expr, proto_enum_t **protoenum) {
 }
 
 static int
-proto_process_children(asn1p_expr_t *expr, proto_msg_t *msgdef, enum asn1print_flags2 flags) {
+proto_process_children(asn1p_expr_t *expr, proto_msg_t *msgdef, int repeated) {
 	asn1p_expr_t *se;
 	asn1p_expr_t *se2;
 
@@ -298,6 +297,7 @@ proto_process_children(asn1p_expr_t *expr, proto_msg_t *msgdef, enum asn1print_f
 //			dont_involve_children = 1;
 		TQ_FOR(se, &(expr->members), next) {
 			proto_msg_def_t *elem = proto_create_msg_elem(se->Identifier, "int32", NULL);
+            elem->repeated = repeated;
 			if (se->expr_type == ASN_BASIC_BIT_STRING) {
 				strcpy(elem->type, "BitString");
 			} else if (se->expr_type == ASN_BASIC_OBJECT_IDENTIFIER) {
@@ -337,9 +337,6 @@ proto_process_children(asn1p_expr_t *expr, proto_msg_t *msgdef, enum asn1print_f
 				extensible = 1;
 				continue;
 			} else if(se->expr_type == A1TC_REFERENCE) {
-				asn1print_ref(se->reference, (enum asn1print_flags) flags);
-//				if(se->Identifier)
-//					safe_printf(" %s", se->Identifier);
 			} else if(se->Identifier) {
 //				INDENT("%s", se->Identifier);
 			} else {
