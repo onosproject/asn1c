@@ -101,8 +101,10 @@ proto_msg_def_t *
 proto_create_msg_elem(const char *name, const char *type, const char *rules) {
 	proto_msg_def_t *msgelem = malloc(sizeof(proto_msg_def_t));
 	memset(msgelem, 0, sizeof(proto_msg_def_t));
-	strcpy(msgelem->name, name);
-	strcpy(msgelem->type, type);
+    if (name) {
+        strcpy(msgelem->name, name);
+    }
+    strcpy(msgelem->type, type);
 	if (rules != NULL)
 		strcpy(msgelem->rules, rules);
 	return msgelem;
