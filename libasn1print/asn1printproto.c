@@ -225,8 +225,9 @@ asn1print_expr_proto(asn1p_module_t *mod, asn1p_expr_t *expr,
 //		}
 //		expr = se;
 	} else if (expr->meta_type == AMT_TYPE &&
-			(expr->expr_type == ASN_CONSTR_SEQUENCE ||
-					expr->expr_type == ASN_CONSTR_CHOICE)) {
+	    		(expr->expr_type == ASN_CONSTR_SEQUENCE ||
+                 expr->expr_type == ASN_CONSTR_SEQUENCE_OF ||
+                 expr->expr_type == ASN_CONSTR_CHOICE)) {
 		proto_msg_t *msg = proto_create_message(expr->Identifier,
 				"sequence from %s:%d", mod->source_file_name, expr->_lineno);
 		if (expr->lhs_params != NULL) {
@@ -234,29 +235,14 @@ asn1print_expr_proto(asn1p_module_t *mod, asn1p_expr_t *expr,
 			strcat(msg->comments, param_comments);
 			free(param_comments);
 		}
-
 		proto_process_children(expr, msg, flags);
 
 		proto_messages_add_msg(message, messages, msg);
 
-    } else if (expr->meta_type == AMT_TYPE &&
-               (expr->expr_type == ASN_CONSTR_SEQUENCE_OF ||
-                expr->expr_type == ASN_CONSTR_CHOICE)) {
-        proto_msg_t *msg = proto_create_message(expr->Identifier,
-                                                "sequence from %s:%d", mod->source_file_name, expr->_lineno);
-        if (expr->lhs_params != NULL) {
-            char *param_comments = proto_extract_params(expr);
-            strcat(msg->comments, param_comments);
-            free(param_comments);
-        }
-
-        proto_process_children(expr, msg, flags);
-
-        proto_messages_add_msg(message, messages, msg);
-
     } else if (expr->expr_type == A1TC_CLASSDEF) {
 		// No equivalent of class in Protobuf - ignore
 		return 0;
+
 	} else if (expr->meta_type == AMT_TYPEREF) {
 		proto_msg_t *msg = proto_create_message(expr->Identifier,
 				"reference from %s:%d", mod->source_file_name, expr->_lineno);
@@ -275,6 +261,7 @@ asn1print_expr_proto(asn1p_module_t *mod, asn1p_expr_t *expr,
 
 		proto_messages_add_msg(message, messages, msg);
 		return 0;
+
 	} else if (expr->meta_type == AMT_VALUESET) {
 		// No equivalent of valueset in Protobuf - ignore
 		return 0;
