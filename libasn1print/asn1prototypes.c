@@ -103,6 +103,8 @@ proto_create_msg_elem(const char *name, const char *type, const char *rules) {
 	memset(msgelem, 0, sizeof(proto_msg_def_t));
     if (name) {
         strcpy(msgelem->name, name);
+    } else {
+        strcpy(msgelem->name, "value");
     }
     strcpy(msgelem->type, type);
 	if (rules != NULL)
