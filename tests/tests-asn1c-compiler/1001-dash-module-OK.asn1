@@ -1,5 +1,5 @@
 -- Test case for an ASN1 module name that contains dashes
--- The proto linter does not allow dashes in names, the compiler should translate
+-- The proto linter does not allow dashes in file names, the test harness should translate
 
 Module-With-Dashes { }
 
