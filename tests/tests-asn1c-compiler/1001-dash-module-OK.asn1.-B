@@ -1,0 +1,21 @@
+////////////////////// module-with-dashes.proto //////////////////////
+// Protobuf generated from /1001-dash-module-OK.asn1 by asn1c-0.9.29
+// Module-With-Dashes
+
+syntax = "proto3";
+
+package pkg1001_dash_module_ok_asn1.v1;
+
+import "validate/v1/validate.proto";
+
+// enumerated from 1001-dash-module-OK.asn1:10
+enum Rainbow {
+    RAINBOW_RED = 0;
+    RAINBOW_ORANGE = 1;
+    RAINBOW_YELLOW = 2;
+    RAINBOW_GREEN = 3;
+    RAINBOW_BLUE = 4;
+    RAINBOW_INDIGO = 5;
+    RAINBOW_VIOLET = 6;
+};
+

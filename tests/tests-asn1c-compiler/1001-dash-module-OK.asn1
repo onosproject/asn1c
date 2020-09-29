@@ -1,0 +1,13 @@
+-- Test case for an ASN1 module name that contains dashes
+-- The proto linter does not allow dashes in file names, the test harness should translate
+
+Module-With-Dashes { }
+
+DEFINITIONS AUTOMATIC TAGS ::=
+
+BEGIN
+
+Rainbow ::= ENUMERATED { red, orange, yellow, green, blue, indigo, violet }
+
+END
+
