@@ -1,0 +1,278 @@
+cmake_minimum_required(VERSION 3.17)
+project(asn1c)
+
+set(CMAKE_CXX_STANDARD 14)
+
+add_definitions(-DHAVE_CONFIG_H -DDATADIR="skeletons")
+
+include_directories(.)
+include_directories(asn1-tools)
+include_directories(asn1-tools/unber)
+include_directories(asn1c)
+include_directories(examples)
+include_directories(examples/sample.source.1609.2)
+include_directories(examples/sample.source.J2735)
+include_directories(examples/sample.source.LDAP3)
+include_directories(examples/sample.source.LTE-RRC)
+include_directories(examples/sample.source.MEGACO)
+include_directories(examples/sample.source.MHEG5)
+include_directories(examples/sample.source.PKIX1)
+include_directories(examples/sample.source.RRC)
+include_directories(examples/sample.source.TAP3)
+include_directories(examples/sample.source.ULP)
+include_directories(libasn1common)
+include_directories(libasn1compiler)
+include_directories(libasn1fix)
+include_directories(libasn1parser)
+include_directories(libasn1print)
+include_directories(skeletons)
+include_directories(tests)
+
+add_executable(asn1c
+        asn1-tools/unber/libasn1_unber_tool.h
+        asn1c/asn1c.c
+        examples/sample.source.1609.2/config.h
+        examples/sample.source.J2735/config.h
+        examples/sample.source.LDAP3/config.h
+        examples/sample.source.LTE-RRC/config.h
+        examples/sample.source.MEGACO/config.h
+        examples/sample.source.MHEG5/config.h
+        examples/sample.source.PKIX1/config.h
+        examples/sample.source.RRC/config.h
+        examples/sample.source.TAP3/config.h
+        examples/sample.source.ULP/config.h
+        libasn1common/asn1_buffer.c
+        libasn1common/asn1_buffer.h
+        libasn1common/asn1_common.h
+        libasn1common/asn1_namespace.c
+        libasn1common/asn1_namespace.h
+        libasn1common/asn1_ref.c
+        libasn1common/asn1_ref.h
+        libasn1common/genhash.c
+        libasn1common/genhash.h
+        libasn1compiler/asn1c_C.c
+        libasn1compiler/asn1c_C.h
+        libasn1compiler/asn1c_compat.c
+        libasn1compiler/asn1c_compat.h
+        libasn1compiler/asn1c_constraint.c
+        libasn1compiler/asn1c_constraint.h
+        libasn1compiler/asn1c_fdeps.c
+        libasn1compiler/asn1c_fdeps.h
+        libasn1compiler/asn1c_internal.h
+        libasn1compiler/asn1c_ioc.c
+        libasn1compiler/asn1c_ioc.h
+        libasn1compiler/asn1c_lang.c
+        libasn1compiler/asn1c_lang.h
+        libasn1compiler/asn1c_misc.c
+        libasn1compiler/asn1c_misc.h
+        libasn1compiler/asn1c_naming.c
+        libasn1compiler/asn1c_naming.h
+        libasn1compiler/asn1c_out.c
+        libasn1compiler/asn1c_out.h
+        libasn1compiler/asn1c_save.c
+        libasn1compiler/asn1c_save.h
+        libasn1compiler/asn1compiler.c
+        libasn1compiler/asn1compiler.h
+        libasn1fix/asn1fix.c
+        libasn1fix/asn1fix.h
+        libasn1fix/asn1fix_bitstring.c
+        libasn1fix/asn1fix_bitstring.h
+        libasn1fix/asn1fix_class.c
+        libasn1fix/asn1fix_class.h
+        libasn1fix/asn1fix_compat.c
+        libasn1fix/asn1fix_compat.h
+        libasn1fix/asn1fix_constr.c
+        libasn1fix/asn1fix_constr.h
+        libasn1fix/asn1fix_constraint.c
+        libasn1fix/asn1fix_constraint.h
+        libasn1fix/asn1fix_constraint_compat.c
+        libasn1fix/asn1fix_crange.c
+        libasn1fix/asn1fix_crange.h
+        libasn1fix/asn1fix_cstring.c
+        libasn1fix/asn1fix_cstring.h
+        libasn1fix/asn1fix_cws.c
+        libasn1fix/asn1fix_cws.h
+        libasn1fix/asn1fix_dereft.c
+        libasn1fix/asn1fix_dereft.h
+        libasn1fix/asn1fix_derefv.c
+        libasn1fix/asn1fix_derefv.h
+        libasn1fix/asn1fix_enum.c
+        libasn1fix/asn1fix_enum.h
+        libasn1fix/asn1fix_export.c
+        libasn1fix/asn1fix_export.h
+        libasn1fix/asn1fix_integer.c
+        libasn1fix/asn1fix_integer.h
+        libasn1fix/asn1fix_internal.h
+        libasn1fix/asn1fix_misc.c
+        libasn1fix/asn1fix_misc.h
+        libasn1fix/asn1fix_param.c
+        libasn1fix/asn1fix_param.h
+        libasn1fix/asn1fix_retrieve.c
+        libasn1fix/asn1fix_retrieve.h
+        libasn1fix/asn1fix_tags.c
+        libasn1fix/asn1fix_tags.h
+        libasn1fix/asn1fix_value.c
+        libasn1fix/asn1fix_value.h
+        libasn1parser/asn1p_class.c
+        libasn1parser/asn1p_class.h
+        libasn1parser/asn1p_constr.c
+        libasn1parser/asn1p_constr.h
+        libasn1parser/asn1p_expr.c
+        libasn1parser/asn1p_expr.h
+        libasn1parser/asn1p_expr2uclass.h
+        libasn1parser/asn1p_expr_str.h
+        libasn1parser/asn1p_integer.c
+        libasn1parser/asn1p_integer.h
+        libasn1parser/asn1p_l.c
+        libasn1parser/asn1p_list.h
+        libasn1parser/asn1p_module.c
+        libasn1parser/asn1p_module.h
+        libasn1parser/asn1p_oid.c
+        libasn1parser/asn1p_oid.h
+        libasn1parser/asn1p_param.c
+        libasn1parser/asn1p_param.h
+        libasn1parser/asn1p_value.c
+        libasn1parser/asn1p_value.h
+        libasn1parser/asn1p_xports.c
+        libasn1parser/asn1p_xports.h
+        libasn1parser/asn1p_y.c
+        libasn1parser/asn1p_y.h
+        libasn1parser/asn1parser.c
+        libasn1parser/asn1parser.h
+        libasn1print/asn1print.c
+        libasn1print/asn1print.h
+        libasn1print/asn1printproto.c
+        libasn1print/asn1printproto.h
+        libasn1print/asn1protooutput.c
+        libasn1print/asn1protooutput.h
+        libasn1print/asn1prototypes.c
+        libasn1print/asn1prototypes.h
+        skeletons/ANY.c
+        skeletons/ANY.h
+        skeletons/asn_application.c
+        skeletons/asn_application.h
+        skeletons/asn_bit_data.c
+        skeletons/asn_bit_data.h
+        skeletons/asn_codecs.h
+        skeletons/asn_codecs_prim.c
+        skeletons/asn_codecs_prim.h
+        skeletons/asn_internal.c
+        skeletons/asn_internal.h
+        skeletons/asn_ioc.h
+        skeletons/asn_random_fill.c
+        skeletons/asn_random_fill.h
+        skeletons/asn_SEQUENCE_OF.c
+        skeletons/asn_SEQUENCE_OF.h
+        skeletons/asn_SET_OF.c
+        skeletons/asn_SET_OF.h
+        skeletons/asn_system.h
+        skeletons/ber_decoder.c
+        skeletons/ber_decoder.h
+        skeletons/ber_tlv_length.c
+        skeletons/ber_tlv_length.h
+        skeletons/ber_tlv_tag.c
+        skeletons/ber_tlv_tag.h
+        skeletons/BIT_STRING.c
+        skeletons/BIT_STRING.h
+        skeletons/BIT_STRING_oer.c
+        skeletons/BMPString.c
+        skeletons/BMPString.h
+        skeletons/BOOLEAN.c
+        skeletons/BOOLEAN.h
+        skeletons/constr_CHOICE.c
+        skeletons/constr_CHOICE.h
+        skeletons/constr_CHOICE_oer.c
+        skeletons/constr_SEQUENCE.c
+        skeletons/constr_SEQUENCE.h
+        skeletons/constr_SEQUENCE_oer.c
+        skeletons/constr_SEQUENCE_OF.c
+        skeletons/constr_SEQUENCE_OF.h
+        skeletons/constr_SET.c
+        skeletons/constr_SET.h
+        skeletons/constr_SET_OF.c
+        skeletons/constr_SET_OF.h
+        skeletons/constr_SET_OF_oer.c
+        skeletons/constr_TYPE.c
+        skeletons/constr_TYPE.h
+        skeletons/constraints.c
+        skeletons/constraints.h
+        skeletons/der_encoder.c
+        skeletons/der_encoder.h
+        skeletons/ENUMERATED.c
+        skeletons/ENUMERATED.h
+        skeletons/GeneralizedTime.c
+        skeletons/GeneralizedTime.h
+        skeletons/GeneralString.c
+        skeletons/GeneralString.h
+        skeletons/GraphicString.c
+        skeletons/GraphicString.h
+        skeletons/IA5String.c
+        skeletons/IA5String.h
+        skeletons/INTEGER.c
+        skeletons/INTEGER.h
+        skeletons/INTEGER_oer.c
+        skeletons/ISO646String.c
+        skeletons/ISO646String.h
+        skeletons/NativeEnumerated.c
+        skeletons/NativeEnumerated.h
+        skeletons/NativeEnumerated_oer.c
+        skeletons/NativeInteger.c
+        skeletons/NativeInteger.h
+        skeletons/NativeInteger_oer.c
+        skeletons/NativeReal.c
+        skeletons/NativeReal.h
+        skeletons/NULL.c
+        skeletons/NULL.h
+        skeletons/NumericString.c
+        skeletons/NumericString.h
+        skeletons/OBJECT_IDENTIFIER.c
+        skeletons/OBJECT_IDENTIFIER.h
+        skeletons/ObjectDescriptor.c
+        skeletons/ObjectDescriptor.h
+        skeletons/OCTET_STRING.c
+        skeletons/OCTET_STRING.h
+        skeletons/OCTET_STRING_oer.c
+        skeletons/oer_decoder.c
+        skeletons/oer_decoder.h
+        skeletons/oer_encoder.c
+        skeletons/oer_encoder.h
+        skeletons/oer_support.c
+        skeletons/oer_support.h
+        skeletons/OPEN_TYPE.c
+        skeletons/OPEN_TYPE.h
+        skeletons/OPEN_TYPE_oer.c
+        skeletons/per_decoder.c
+        skeletons/per_decoder.h
+        skeletons/per_encoder.c
+        skeletons/per_encoder.h
+        skeletons/per_opentype.c
+        skeletons/per_opentype.h
+        skeletons/per_support.c
+        skeletons/per_support.h
+        skeletons/PrintableString.c
+        skeletons/PrintableString.h
+        skeletons/REAL.c
+        skeletons/REAL.h
+        skeletons/RELATIVE-OID.c
+        skeletons/RELATIVE-OID.h
+        skeletons/T61String.c
+        skeletons/T61String.h
+        skeletons/TeletexString.c
+        skeletons/TeletexString.h
+        skeletons/UniversalString.c
+        skeletons/UniversalString.h
+        skeletons/UTCTime.c
+        skeletons/UTCTime.h
+        skeletons/UTF8String.c
+        skeletons/UTF8String.h
+        skeletons/VideotexString.c
+        skeletons/VideotexString.h
+        skeletons/VisibleString.c
+        skeletons/VisibleString.h
+        skeletons/xer_decoder.c
+        skeletons/xer_decoder.h
+        skeletons/xer_encoder.c
+        skeletons/xer_encoder.h
+        skeletons/xer_support.c
+        skeletons/xer_support.h
+        config.h)
