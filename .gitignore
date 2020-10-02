@@ -103,3 +103,6 @@ doc/docsrc/*.xdv
 .project
 .settings/
 
+# CLion
+cmake-build-*
+
