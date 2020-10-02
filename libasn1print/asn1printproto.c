@@ -321,7 +321,6 @@ proto_process_children(asn1p_expr_t *expr, proto_msg_t *msgdef, int repeated) {
 						strcpy(elem->type, comp->name);
 					}
 				}
-				printf("Type for %s is %d", se->Identifier, se2->expr_type);
 				elem->repeated = 1;
 			} else if (se->expr_type == A1TC_REFERENCE && se->meta_type == AMT_TYPEREF) {
 				struct asn1p_ref_component_s *comp = se->reference->components;
