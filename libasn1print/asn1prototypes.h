@@ -23,12 +23,26 @@
 #define PROTO_COMMENTS_CHARS 200
 #define PROTO_PATH_CHARS 200
 
+typedef enum {
+    PROTO_PARAM_TYPE,
+    PROTO_PARAM_VALUE,
+    PROTO_PARAM_VALUE_SET,
+    PROTO_PARAM_CLASS,
+    PROTO_PARAM_OBJECT,
+    PROTO_PARAM_OBJECT_SET
+} proto_param_kind_e;
+
+typedef struct proto_param_s {
+    proto_param_kind_e kind;
+    char name[PROTO_NAME_CHARS];
+} proto_param_t;
+
 typedef struct proto_msg_def_s {
 	char type[PROTO_TYPE_CHARS];
 	char name[PROTO_NAME_CHARS];
 	char rules[PROTO_RULES_CHARS];
 	char comments[PROTO_COMMENTS_CHARS];
-	int repeated;
+    int repeated;
 } proto_msg_def_t;
 
 typedef struct proto_msg_oneof_s {
@@ -45,6 +59,8 @@ typedef struct proto_msg_s {
 	size_t entries;
 	struct proto_msg_oneof_s **oneof;
 	size_t oneofs;
+    struct proto_param_s **param;
+    size_t params;
 	char comments[PROTO_COMMENTS_CHARS]; // Include new lines if necessary
 } proto_msg_t;
 
@@ -88,9 +104,10 @@ void proto_enums_add_enum(proto_enum_t **protoenums, size_t *enums_count, proto_
 proto_msg_t *proto_create_message(const char *name, int spec_index, int unique_idx, const char *comment_fmt, char *src, const int line);
 proto_msg_oneof_t *proto_create_msg_oneof(const char *name, const char *comment_fmt, char *src, const int line);
 proto_msg_def_t *proto_create_msg_elem(const char *name, const char *type, const char *rules);
+void proto_msg_add_param(proto_msg_t *msg, proto_param_t *param);
 void proto_msg_add_elem(proto_msg_t *msg, proto_msg_def_t *elem);
 void proto_msg_add_oneof(proto_msg_t *msg, proto_msg_oneof_t *oneof);
-void proto_oneof_add_msg(proto_msg_oneof_t *oneof, proto_msg_def_t *elem);
+//void proto_oneof_add_msg(proto_msg_oneof_t *oneof, proto_msg_def_t *elem);
 void proto_messages_add_msg(proto_msg_t **messages, size_t *message_count, proto_msg_t *msg);
 proto_import_t *proto_create_import(const char *path, asn1p_oid_t *oid);
 char *proto_remove_rel_path(char *path);

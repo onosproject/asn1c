@@ -11,15 +11,21 @@ import "validate/v1/validate.proto";
 // sequence from 58a-param-OK.asn1:15
 // Param INTEGER:maxSize
 message DirectoryString001 {
-    string teletex_string = 1 [(validate.v1.rules).string = {min_len: 1, max_len: 127}];
-    string utf8_string = 2 [(validate.v1.rules).string = {min_len: 1, max_len: 127}];
+    // choice from 58a-param-OK.asn1:15
+    oneof directory_string {
+        string teletex_string = 1 [(validate.v1.rules).string = {min_len: 1, max_len: 127}];
+        string utf8_string = 2 [(validate.v1.rules).string = {min_len: 1, max_len: 127}];
+    }
 };
 
 // sequence from 58a-param-OK.asn1:15
 // Param INTEGER:maxSize
 message DirectoryString004 {
-    string teletex_string = 1 [(validate.v1.rules).string = {min_len: 1, max_len: 128}];
-    string utf8_string = 2 [(validate.v1.rules).string = {min_len: 1, max_len: 128}];
+    // choice from 58a-param-OK.asn1:15
+    oneof directory_string {
+        string teletex_string = 1 [(validate.v1.rules).string = {min_len: 1, max_len: 128}];
+        string utf8_string = 2 [(validate.v1.rules).string = {min_len: 1, max_len: 128}];
+    }
 };
 
 // reference from 58a-param-OK.asn1:19

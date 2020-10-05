@@ -84,6 +84,19 @@ proto_enums_add_enum(proto_enum_t **protoenums, size_t *enums_count, proto_enum_
 	*enums_count = existing_count + 1;
 }
 
+proto_msg_oneof_t *
+proto_create_msg_oneof(const char *name, const char *comment_fmt, char *src, const int line) {
+    proto_msg_oneof_t *msg = malloc(sizeof(proto_msg_oneof_t));
+    memset(msg, 0, sizeof(proto_msg_oneof_t));
+    strcpy(msg->name, name);
+    if (comment_fmt != NULL) {
+        sprintf(msg->comments, comment_fmt, proto_remove_whole_path(src), line);
+    }
+    msg->entry = calloc(0, sizeof(proto_msg_def_t *));
+    msg->entries = 0;
+    return msg;
+}
+
 proto_msg_t *
 proto_create_message(const char *name, int spec_index, int unique_idx, const char *comment_fmt, char *src, const int line) {
 	proto_msg_t *msg = malloc(sizeof(proto_msg_t));
@@ -117,11 +130,27 @@ proto_create_msg_elem(const char *name, const char *type, const char *rules) {
 }
 
 void
+proto_msg_add_param(proto_msg_t *msg, proto_param_t *param) {
+    size_t existing_params = msg->params;
+    msg->param = realloc(msg->param, (existing_params + 1)*sizeof(proto_param_t *));
+    msg->param[existing_params] = param;
+    msg->params = existing_params + 1;
+}
+
+void
 proto_msg_add_elem(proto_msg_t *msg, proto_msg_def_t *elem) {
 	size_t existing_elems = msg->entries;
 	msg->entry = realloc(msg->entry, (existing_elems + 1)*sizeof(proto_msg_def_t *));
 	msg->entry[existing_elems] = elem;
 	msg->entries = existing_elems + 1;
+}
+
+void
+proto_msg_add_oneof(proto_msg_t *msg, proto_msg_oneof_t *elem) {
+    size_t existing_oneofs = msg->oneofs;
+    msg->oneof = realloc(msg->oneof, (existing_oneofs + 1)*sizeof(proto_msg_oneof_t *));
+    msg->oneof[existing_oneofs] = elem;
+    msg->oneofs = existing_oneofs + 1;
 }
 
 void
