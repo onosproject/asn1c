@@ -146,10 +146,10 @@ proto_msg_add_elem(proto_msg_t *msg, proto_msg_def_t *elem) {
 }
 
 void
-proto_msg_add_oneof(proto_msg_t *msg, proto_msg_oneof_t *elem) {
+proto_msg_add_oneof(proto_msg_t *msg, proto_msg_oneof_t *oneof) {
     size_t existing_oneofs = msg->oneofs;
     msg->oneof = realloc(msg->oneof, (existing_oneofs + 1)*sizeof(proto_msg_oneof_t *));
-    msg->oneof[existing_oneofs] = elem;
+    msg->oneof[existing_oneofs] = oneof;
     msg->oneofs = existing_oneofs + 1;
 }
 
