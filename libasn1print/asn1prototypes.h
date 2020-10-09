@@ -85,7 +85,7 @@ proto_enum_t *proto_create_enum(const char *name, const char *comment_fmt, char 
 proto_enum_def_t *proto_create_enum_def(const char* name, const int index, const char *comment);
 void proto_enum_add_def(proto_enum_t *protoenum, proto_enum_def_t *def);
 void proto_enums_add_enum(proto_enum_t **protoenums, size_t *enums_count, proto_enum_t *protoenum);
-proto_msg_t *proto_create_message(const char *name, const char *comment_fmt, char *src, const int line);
+proto_msg_t *proto_create_message(const char *name, int spec_index, int unique_idx, const char *comment_fmt, char *src, const int line);
 proto_msg_oneof_t *proto_create_msg_oneof(const char *name, const char *comment_fmt, char *src, const int line);
 proto_msg_def_t *proto_create_msg_elem(const char *name, const char *type, const char *rules);
 void proto_msg_add_elem(proto_msg_t *msg, proto_msg_def_t *elem);

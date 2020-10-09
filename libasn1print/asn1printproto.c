@@ -92,19 +92,33 @@ proto_extract_params(asn1p_expr_t *expr) {
 	for (int i=0; i < expr->lhs_params->params_count; i++ ){
 		struct asn1p_param_s *param = &expr->lhs_params->params[i];
 		sprintf(temp, "\nParam %s:%s", param->governor->components->name, param->argument);
-		strncat(params_comments, temp, PROTO_COMMENTS_CHARS);
+		strncat(params_comments, temp, PROTO_COMMENTS_CHARS-strlen(params_comments));
 	}
 
 	return params_comments;
 }
 
 int
-asn1print_expr_proto(asn1p_module_t *mod, asn1p_expr_t *expr,
+asn1print_expr_proto(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *expr,
 		proto_msg_t **message, size_t *messages, proto_enum_t **protoenum, size_t *enums,
 		enum asn1print_flags2 flags) {
 	if (mod != NULL) {
 		// A dummy placeholder to avoid coverage errors
 	}
+
+	// If there are specializations (driven by parameters, define these as proto messages)
+	if (expr->specializations.pspecs_count > 0) {
+		int i;
+		int ret;
+		for (i=0; i<expr->specializations.pspecs_count; i++) {
+			asn1p_expr_t* spec_clone = expr->specializations.pspec[i].my_clone;
+			ret = asn1print_expr_proto(asn, mod, spec_clone, message, messages, protoenum, enums, flags);
+			if (ret != 0) {
+				return ret;
+			}
+		}
+		return 0;
+	};
 
 	if(!expr->Identifier) return 0;
 
@@ -115,20 +129,22 @@ asn1print_expr_proto(asn1p_module_t *mod, asn1p_expr_t *expr,
 		proto_enums_add_enum(protoenum, enums, newenum);
 
 	} else if (expr->meta_type == AMT_VALUE) {
-
-		if (expr->expr_type == ASN_BASIC_INTEGER) {
-			proto_msg_t *msg = proto_create_message(expr->Identifier,
+		proto_msg_t *msg;
+		proto_msg_def_t *msgelem;
+		switch (expr->expr_type) {
+		case ASN_BASIC_INTEGER:
+			msg = proto_create_message(expr->Identifier, expr->spec_index, expr->_type_unique_index,
 					"constant Integer from %s:%d", mod->source_file_name, expr->_lineno);
-			proto_msg_def_t *msgelem = proto_create_msg_elem("value", "int32", NULL);
+			msgelem = proto_create_msg_elem("value", "int32", NULL);
 			sprintf(msgelem->rules, "int32.const = %d", (int)expr->value->value.v_integer);
 			proto_msg_add_elem(msg, msgelem);
 			proto_messages_add_msg(message, messages, msg);
 
 			return 0;
-		} else if(expr->expr_type == A1TC_REFERENCE) {
-			proto_msg_t *msg = proto_create_message(expr->Identifier,
+		case A1TC_REFERENCE:
+			msg = proto_create_message(expr->Identifier, expr->spec_index, expr->_type_unique_index,
 					"reference from %s:%d", mod->source_file_name, expr->_lineno);
-			proto_msg_def_t *msgelem = proto_create_msg_elem("value", "int32", NULL);
+			msgelem = proto_create_msg_elem("value", "int32", NULL);
 
 			for(size_t cc = 0; cc < expr->reference->comp_count; cc++) {
 				if(cc) strcat(msgelem->comments, ".");
@@ -159,9 +175,12 @@ asn1print_expr_proto(asn1p_module_t *mod, asn1p_expr_t *expr,
 			}
 
 			return 0;
+		default:
+			printf("ERROR: unhandled expr->expr_type %d\n", expr->expr_type);
+			return -1;
 		}
 	} else if (expr->expr_type == ASN_BASIC_INTEGER && expr->meta_type == AMT_VALUESET) {
-		proto_msg_t *msg = proto_create_message(expr->Identifier,
+		proto_msg_t *msg = proto_create_message(expr->Identifier, expr->spec_index, expr->_type_unique_index,
 				"range of Integer from %s:%d", mod->source_file_name, expr->_lineno);
 		proto_msg_def_t *msgelem = proto_create_msg_elem("value", "int32", NULL);
 		char *constraints = proto_constraint_print(expr->constraints, flags);
@@ -176,7 +195,7 @@ asn1print_expr_proto(asn1p_module_t *mod, asn1p_expr_t *expr,
 			expr->expr_type != ASN_CONSTR_SEQUENCE_OF &&
 			expr->expr_type != ASN_CONSTR_CHOICE) {
 
-		proto_msg_t *msg = proto_create_message(expr->Identifier,
+		proto_msg_t *msg = proto_create_message(expr->Identifier, expr->spec_index, expr->_type_unique_index,
 				"range of Integer from %s:%d", mod->source_file_name, expr->_lineno);
 		if (expr->lhs_params != NULL) {
 			char *param_comments = proto_extract_params(expr);
@@ -216,18 +235,11 @@ asn1print_expr_proto(asn1p_module_t *mod, asn1p_expr_t *expr,
 			return 0;
 		}
 		return 0;
-//	} else if(expr->expr_type == A1TC_REFERENCE) {
-//		se = WITH_MODULE_NAMESPACE(expr->module, expr_ns, asn1f_find_terminal_type_ex(asn, expr_ns, expr));
-//		if(!se) {
-//			safe_printf(" (ANY)");
-//			return 0;
-//		}
-//		expr = se;
 	} else if (expr->meta_type == AMT_TYPE &&
 	    		(expr->expr_type == ASN_CONSTR_SEQUENCE ||
                  expr->expr_type == ASN_CONSTR_SEQUENCE_OF ||
                  expr->expr_type == ASN_CONSTR_CHOICE)) {
-		proto_msg_t *msg = proto_create_message(expr->Identifier,
+		proto_msg_t *msg = proto_create_message(expr->Identifier, expr->spec_index, expr->_type_unique_index,
 				"sequence from %s:%d", mod->source_file_name, expr->_lineno);
 		if (expr->lhs_params != NULL) {
 			char *param_comments = proto_extract_params(expr);
@@ -243,7 +255,7 @@ asn1print_expr_proto(asn1p_module_t *mod, asn1p_expr_t *expr,
 		return 0;
 
 	} else if (expr->meta_type == AMT_TYPEREF) {
-		proto_msg_t *msg = proto_create_message(expr->Identifier,
+		proto_msg_t *msg = proto_create_message(expr->Identifier, expr->spec_index, expr->_type_unique_index,
 				"reference from %s:%d", mod->source_file_name, expr->_lineno);
 		if (expr->lhs_params != NULL) {
 			char *param_comments = proto_extract_params(expr);
@@ -252,9 +264,10 @@ asn1print_expr_proto(asn1p_module_t *mod, asn1p_expr_t *expr,
 		}
 
 		proto_msg_def_t *msgelem = proto_create_msg_elem("value", "int32", NULL);
-		if (expr->reference->comp_count == 1) {
-			struct asn1p_ref_component_s *comp = expr->reference->components;
-			strcpy(msgelem->type, comp->name);
+		if (expr->reference->comp_count >= 1) {
+			asn1p_expr_t *refElem;
+			refElem = WITH_MODULE_NAMESPACE(expr->module, expr_ns, asn1f_find_terminal_type_ex(asn, expr_ns, expr));
+			sprintf(msgelem->type, "%s%03d", refElem->Identifier, refElem->_type_unique_index);
 		}
 		proto_msg_add_elem(msg, msgelem);
 
@@ -560,7 +573,7 @@ asn1extract_columns(asn1p_expr_t *expr, proto_msg_t **proto_msgs, size_t *proto_
 	}
 	strcat(comment, " from \%s:\%d");
 
-	proto_msg_t *new_proto_msg = proto_create_message(expr->Identifier, comment, mod_file, expr->_lineno);
+	proto_msg_t *new_proto_msg = proto_create_message(expr->Identifier, expr->spec_index, expr->_type_unique_index, comment, mod_file, expr->_lineno);
 
 	for (int i = 0; i < (int)(expr->ioc_table->rows); i++) {
 		asn1p_ioc_row_t *rowi = row+i;
@@ -704,8 +717,11 @@ proto_value_print(const asn1p_value_t *val, enum asn1print_flags flags) {
 			return result;
 		}
 	case ATV_REFERENCED:
-//		return asn1print_ref(val->value.reference, flags);
-		return result;
+		for(size_t cc = 0; cc < val->value.reference->comp_count; cc++) {
+			if(cc) strcat(result, ".");
+			strcat(result, val->value.reference->components[cc].name);
+		}
+		break;
 	case ATV_VALUESET:
 //		return asn1print_constraint(val->value.constraint, flags);
 		return result;

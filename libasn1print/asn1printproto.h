@@ -30,7 +30,7 @@ enum asn1print_flags2 {
 	APF_INT32_VALUE = 0x100, /* Dealing with int32 - for max*/
 };
 
-int asn1print_expr_proto(asn1p_module_t *mod, asn1p_expr_t *tc,
+int asn1print_expr_proto(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *tc,
 		proto_msg_t **message, size_t *messages, proto_enum_t **protoenum, size_t *enums,
 		enum asn1print_flags2 flags);
 
