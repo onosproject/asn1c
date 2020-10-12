@@ -157,6 +157,7 @@ asn1print_module(asn1p_t *asn, asn1p_module_t *mod, enum asn1print_flags flags) 
 	asn1p_expr_t *tc;
 	asn1p_xports_t *tx;
 	uint16_t max_line_len = 72;
+	int ret = 0;
 
 	if(flags & APF_PRINT_XML_DTD) {
 		safe_printf("<!-- ASN.1 module\n");
@@ -206,9 +207,13 @@ asn1print_module(asn1p_t *asn, asn1p_module_t *mod, enum asn1print_flags flags) 
 			size_t messages = 0;
 			proto_enum_t **protoenum = calloc(0, sizeof(proto_enum_t *));
 			size_t protoenums = 0;
-			asn1print_expr_proto(mod, tc,
+			ret = asn1print_expr_proto(asn, mod, tc,
 					message, &messages, protoenum, &protoenums,
 					(enum asn1print_flags2)flags);
+			if (ret != 0) {
+				printf("Error in asn1print_expr_proto\n");
+				return ret;
+			}
 
 			if (messages > 0) {
 				size_t existing_msgs = proto_module->messages;

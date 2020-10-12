@@ -85,10 +85,14 @@ proto_enums_add_enum(proto_enum_t **protoenums, size_t *enums_count, proto_enum_
 }
 
 proto_msg_t *
-proto_create_message(const char *name, const char *comment_fmt, char *src, const int line) {
+proto_create_message(const char *name, int spec_index, int unique_idx, const char *comment_fmt, char *src, const int line) {
 	proto_msg_t *msg = malloc(sizeof(proto_msg_t));
 	memset(msg, 0, sizeof(proto_msg_t));
-	strcpy(msg->name, name);
+	if (spec_index > -1) {
+		snprintf(msg->name, PROTO_NAME_CHARS, "%s%03d", name, unique_idx);
+	} else {
+		strcpy(msg->name, name);
+	}
 	if (comment_fmt != NULL) {
 		sprintf(msg->comments, comment_fmt, proto_remove_whole_path(src), line);
 	}
