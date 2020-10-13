@@ -169,7 +169,6 @@ startNotLcLetter(char *name) {
 
 static void
 proto_print_comments(char *comments) {
-
 	char *str1, *saveptr1, *token;
 	int j;
 	for (j = 1, str1 = comments; ; j++, str1 = NULL) {
@@ -202,6 +201,56 @@ proto_print_oid(asn1p_oid_t *oid) {
 }
 
 static void
+print_entries(proto_msg_def_t **entry, size_t entries,
+              enum asn1print_flags2 flags, int level, int andfree) {
+    for (int i=0; i < (int)(entries); i++) {
+        struct proto_msg_def_s *proto_msg_def  = entry[i];
+        INDENT("");
+        if (proto_msg_def->repeated > 0) {
+            safe_printf("repeated ");
+        }
+        char *typePc;
+        if (strstr(PROTOSCALARTYPES, proto_msg_def->type) != NULL) {
+            typePc = strdup(proto_msg_def->type);
+        } else {
+            typePc = toPascalCaseDup(proto_msg_def->type);
+        }
+        char *nameLsc = toSnakeCaseDup(proto_msg_def->name, SNAKECASE_LOWER);
+        safe_printf("%s %s = %d", typePc, nameLsc, i+1);
+        free(typePc);
+        free(nameLsc);
+        if (strlen(proto_msg_def->rules) > 0) {
+            safe_printf(" [(validate.v1.rules).%s]", proto_msg_def->rules);
+        }
+        if (strlen(proto_msg_def->comments) > 0) {
+            safe_printf("; // %s\n", proto_msg_def->comments);
+        } else {
+            safe_printf(";\n");
+        }
+        if (andfree) {
+            free(proto_msg_def);
+            entry[i] = NULL;
+        }
+    }
+}
+
+static void
+proto_print_single_oneof(struct proto_msg_oneof_s *proto_oneof,
+         enum asn1print_flags2 flags, int level, int andfree) {
+    INDENT("");
+    if (strlen(proto_oneof->comments)) {
+        proto_print_comments(proto_oneof->comments);
+    }
+
+    INDENT("");
+    safe_printf("oneof %s {\n", toSnakeCaseDup(proto_oneof->name, SNAKECASE_LOWER));
+    level++;
+    print_entries(proto_oneof->entry, proto_oneof->entries, flags, level, andfree);
+    level--;
+    INDENT("}\n");
+}
+
+static void
 proto_print_single_msg(proto_msg_t *proto_msg, enum asn1print_flags2 flags,
 		int level, int andfree) {
 	if (strlen(proto_msg->comments)) {
@@ -212,35 +261,11 @@ proto_print_single_msg(proto_msg_t *proto_msg, enum asn1print_flags2 flags,
 	safe_printf("message %s {\n", namePc);
 	free(namePc);
 	level++;
-	for (int i=0; i < (int)(proto_msg->entries); i++) {
-		struct proto_msg_def_s *proto_msg_def  = proto_msg->entry[i];
-		INDENT("");
-		if (proto_msg_def->repeated > 0) {
-			safe_printf("repeated ");
-		}
-		char *typePc;
-		if (strstr(PROTOSCALARTYPES, proto_msg_def->type) != NULL) {
-			typePc = strdup(proto_msg_def->type);
-		} else {
-			typePc = toPascalCaseDup(proto_msg_def->type);
-		}
-		char *nameLsc = toSnakeCaseDup(proto_msg_def->name, SNAKECASE_LOWER);
-		safe_printf("%s %s = %d", typePc, nameLsc, i+1);
-		free(typePc);
-		free(nameLsc);
-		if (strlen(proto_msg_def->rules) > 0) {
-			safe_printf(" [(validate.v1.rules).%s]", proto_msg_def->rules);
-		}
-		if (strlen(proto_msg_def->comments) > 0) {
-			safe_printf("; // %s\n", proto_msg_def->comments);
-		} else {
-			safe_printf(";\n");
-		}
-		if (andfree) {
-			free(proto_msg_def);
-			proto_msg->entry[i] = NULL;
-		}
-	}
+    print_entries(proto_msg->entry, proto_msg->entries, flags, level, andfree);
+    for (int i=0; i < (int)(proto_msg->oneofs); i++) {
+        struct proto_msg_oneof_s *proto_oneof  = proto_msg->oneof[i];
+        proto_print_single_oneof(proto_oneof, flags, level, andfree);
+    }
 	level--;
 	INDENT("};\n\n");
 }

@@ -84,13 +84,39 @@ static char
 	return escaped;
 }
 
+static proto_param_kind_e
+proto_param_type(struct asn1p_param_s *param) {
+    char *governer = param->governor->components->name;
+    char *arg = param->argument;
+
+    //    if (strlen(governer) == 0) {
+//        // All caps means class/type
+//        // Start with cap means type
+//        // Start with cap means type
+//    } else if (param->governor->components->lex_type == ){
+//        // Start with lowercase means value
+//        // Starts with upper case
+//    }
+    // FIXME: For now just discriminating between Type, Value and Value Set
+    return !strlen(governer) ? PROTO_PARAM_TYPE
+           : islower(arg[0]) ? PROTO_PARAM_VALUE
+                             : PROTO_PARAM_VALUE_SET;
+}
+
 static char *
-proto_extract_params(asn1p_expr_t *expr) {
+proto_extract_params(proto_msg_t *msg, asn1p_expr_t *expr) {
 	char *params_comments = malloc(PROTO_COMMENTS_CHARS);
 	memset(params_comments, 0, PROTO_COMMENTS_CHARS);
 	char temp[PROTO_COMMENTS_CHARS] = {};
 	for (int i=0; i < expr->lhs_params->params_count; i++ ){
 		struct asn1p_param_s *param = &expr->lhs_params->params[i];
+        proto_param_t *pp = malloc(sizeof(proto_param_t));
+        memset(pp, 0, sizeof(proto_param_t));
+        pp->kind = proto_param_type(param);
+        strcpy(pp->name, param->argument);
+
+        proto_msg_add_param(msg, pp);
+
 		sprintf(temp, "\nParam %s:%s", param->governor->components->name, param->argument);
 		strncat(params_comments, temp, PROTO_COMMENTS_CHARS-strlen(params_comments));
 	}
@@ -198,7 +224,7 @@ asn1print_expr_proto(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *expr,
 		proto_msg_t *msg = proto_create_message(expr->Identifier, expr->spec_index, expr->_type_unique_index,
 				"range of Integer from %s:%d", mod->source_file_name, expr->_lineno);
 		if (expr->lhs_params != NULL) {
-			char *param_comments = proto_extract_params(expr);
+			char *param_comments = proto_extract_params(msg, expr);
 			strcat(msg->comments, param_comments);
 			free(param_comments);
 		}
@@ -237,18 +263,36 @@ asn1print_expr_proto(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *expr,
 		return 0;
 	} else if (expr->meta_type == AMT_TYPE &&
 	    		(expr->expr_type == ASN_CONSTR_SEQUENCE ||
-                 expr->expr_type == ASN_CONSTR_SEQUENCE_OF ||
-                 expr->expr_type == ASN_CONSTR_CHOICE)) {
+                    expr->expr_type == ASN_CONSTR_SEQUENCE_OF)) {
 		proto_msg_t *msg = proto_create_message(expr->Identifier, expr->spec_index, expr->_type_unique_index,
 				"sequence from %s:%d", mod->source_file_name, expr->_lineno);
 		if (expr->lhs_params != NULL) {
-			char *param_comments = proto_extract_params(expr);
+			char *param_comments = proto_extract_params(msg, expr);
 			strcat(msg->comments, param_comments);
 			free(param_comments);
 		}
 		proto_process_children(expr, msg, expr->expr_type == ASN_CONSTR_SEQUENCE_OF);
 
 		proto_messages_add_msg(message, messages, msg);
+
+    } else if (expr->meta_type == AMT_TYPE && expr->expr_type == ASN_CONSTR_CHOICE) {
+        proto_msg_t *msg = proto_create_message(expr->Identifier, expr->spec_index, expr->_type_unique_index,
+                                                "sequence from %s:%d", mod->source_file_name, expr->_lineno);
+
+        // TODO: Determine if comments should belong to the oneof or to the parent message.
+        if (expr->lhs_params != NULL) {
+            char *param_comments = proto_extract_params(msg, expr);
+            strcat(msg->comments, param_comments);
+            free(param_comments);
+        }
+
+        proto_msg_oneof_t *oneof = proto_create_msg_oneof(expr->Identifier,
+                                                          "choice from %s:%d", mod->source_file_name, expr->_lineno);
+        proto_msg_add_oneof(msg, oneof);
+
+        proto_process_children(expr, (proto_msg_t *) oneof, 0);
+
+        proto_messages_add_msg(message, messages, msg);
 
     } else if (expr->expr_type == A1TC_CLASSDEF) {
 		// No equivalent of class in Protobuf - ignore
@@ -258,7 +302,7 @@ asn1print_expr_proto(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *expr,
 		proto_msg_t *msg = proto_create_message(expr->Identifier, expr->spec_index, expr->_type_unique_index,
 				"reference from %s:%d", mod->source_file_name, expr->_lineno);
 		if (expr->lhs_params != NULL) {
-			char *param_comments = proto_extract_params(expr);
+			char *param_comments = proto_extract_params(msg, expr);
 			strcat(msg->comments, param_comments);
 			free(param_comments);
 		}
