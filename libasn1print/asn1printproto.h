@@ -28,6 +28,7 @@ enum asn1print_flags2 {
 	APF_STRING_VALUE = 0x40, /* Dealing with a string rather than numeric - for min_len */
 	APF_BYTES_VALUE = 0x80, /* Dealing with bytes rather than numeric - for min_bytes */
 	APF_INT32_VALUE = 0x100, /* Dealing with int32 - for max*/
+	APF_REPEATED_VALUE = 0x1000, /* Dealing with repeated - for max*/
 };
 
 int asn1print_expr_proto(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *tc,

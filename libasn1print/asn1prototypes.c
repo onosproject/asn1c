@@ -111,6 +111,8 @@ proto_create_message(const char *name, int spec_index, int unique_idx, const cha
 	}
 	msg->entry = calloc(0, sizeof(proto_msg_def_t *));
 	msg->entries = 0;
+	msg->nested = calloc(0, sizeof(proto_msg_t *));
+	msg->nesteds = 0;
 	return msg;
 }
 
@@ -153,12 +155,26 @@ proto_msg_add_oneof(proto_msg_t *msg, proto_msg_oneof_t *oneof) {
     msg->oneofs = existing_oneofs + 1;
 }
 
+void proto_oneof_add_elem(proto_msg_oneof_t *oneof, proto_msg_def_t *elem) {
+    size_t existing_elems = oneof->entries;
+    oneof->entry = realloc(oneof->entry, (existing_elems + 1)*sizeof(proto_msg_def_t *));
+    oneof->entry[existing_elems] = elem;
+    oneof->entries = existing_elems + 1;
+}
+
 void
 proto_messages_add_msg(proto_msg_t **messages, size_t *message_count, proto_msg_t *msg) {
 	size_t existing_count = *message_count;
 	messages = realloc(messages, (existing_count + 1)*sizeof(proto_msg_t *));
 	messages[existing_count] = msg;
 	*message_count = existing_count + 1;
+}
+
+void proto_msg_add_nested(proto_msg_t *msg, proto_msg_t *nested) {
+	size_t existing_nesteds = msg->nesteds;
+	msg->nested = realloc(msg->nested, (existing_nesteds + 1)*sizeof(proto_msg_t *));
+	msg->nested[existing_nesteds] = nested;
+	msg->nesteds = existing_nesteds + 1;
 }
 
 proto_import_t *

@@ -167,6 +167,15 @@ asn1print_expr_proto(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *expr,
 			proto_messages_add_msg(message, messages, msg);
 
 			return 0;
+		case ASN_BASIC_RELATIVE_OID:
+			msg = proto_create_message(expr->Identifier, expr->spec_index, expr->_type_unique_index,
+					"constant Basic OID from %s:%d", mod->source_file_name, expr->_lineno);
+			msgelem = proto_create_msg_elem("value", "string", NULL);
+			sprintf(msgelem->rules, "string.const = '%s'", asn1f_printable_value(expr->value));
+			proto_msg_add_elem(msg, msgelem);
+			proto_messages_add_msg(message, messages, msg);
+
+			break;
 		case A1TC_REFERENCE:
 			msg = proto_create_message(expr->Identifier, expr->spec_index, expr->_type_unique_index,
 					"reference from %s:%d", mod->source_file_name, expr->_lineno);
@@ -197,12 +206,12 @@ asn1print_expr_proto(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *expr,
 				}
 				break;
 			default:
-				printf("// Error. AMT_VALUE with ExprType: %d\n", expr->value->type);
+				fprintf(stderr, "// Error. AMT_VALUE with ExprType: %d\n", expr->value->type);
 			}
 
 			return 0;
 		default:
-			printf("ERROR: unhandled expr->expr_type %d\n", expr->expr_type);
+			fprintf(stderr, "ERROR: unhandled expr->expr_type %d\n", expr->expr_type);
 			return -1;
 		}
 	} else if (expr->expr_type == ASN_BASIC_INTEGER && expr->meta_type == AMT_VALUESET) {
@@ -318,11 +327,15 @@ asn1print_expr_proto(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *expr,
 		proto_messages_add_msg(message, messages, msg);
 		return 0;
 
-	} else if (expr->meta_type == AMT_VALUESET) {
-		// No equivalent of valueset in Protobuf - ignore
+	} else if (expr->meta_type == AMT_VALUESET && expr->expr_type == A1TC_REFERENCE) {
+		char refname[PROTO_NAME_CHARS] = {};
+		if (expr->reference && expr->reference->comp_count > 0) {
+			strcpy(refname, expr->reference->components[0].name);
+		}
+		asn1extract_columns(expr, message, messages, mod->source_file_name);
 		return 0;
 	} else {
-		printf("\n\n//////// ERROR Unhandled expr %s. Meta type: %d. Expr type: %d /////\n\n",
+		fprintf(stderr, "\n\n//////// ERROR Unhandled expr %s. Meta type: %d. Expr type: %d /////\n\n",
 				expr->Identifier, expr->meta_type, expr->expr_type);
 	}
 	return 0;
@@ -371,20 +384,58 @@ proto_process_children(asn1p_expr_t *expr, proto_msg_t *msgdef, int repeated) {
 				}
 			} else if (se->meta_type == AMT_TYPE && se->expr_type == ASN_CONSTR_SEQUENCE_OF) {
 				elem->repeated = 1;
+				if (se->constraints != NULL) {
+					char *constraint = proto_constraint_print(se->constraints, APF_REPEATED_VALUE);
+					sprintf(elem->rules, "repeated = {%s}", constraint);
+					free(constraint);
+				}
 				se2 = TQ_FIRST(&se->members); // Find the type
 				if (se2->expr_type == A1TC_REFERENCE && se2->meta_type == AMT_TYPEREF) {
 					if (se2->reference->comp_count == 1) {
 						struct asn1p_ref_component_s *comp = se2->reference->components;
 						strcpy(elem->type, comp->name);
 					}
+				} else {
+					fprintf(stderr, "unhandled expr_type: %d and meta_type: %d in %s:%s \n",
+							se->expr_type, se->meta_type, expr->Identifier, se->Identifier);
 				}
-				elem->repeated = 1;
 			} else if (se->expr_type == A1TC_REFERENCE && se->meta_type == AMT_TYPEREF) {
-				struct asn1p_ref_component_s *comp = se->reference->components;
-				if (se->reference->comp_count == 2) {
-					sprintf(elem->type, "%s", (comp+1)->name);
-				} else if (se->reference->comp_count == 1) {
-					strcpy(elem->type, comp->name);
+				if (se->constraints &&
+						se->constraints->type == ACT_CA_SET) {
+					if (se->constraints->el_count == 1) {
+						asn1p_constraint_t *el0 = se->constraints->elements[0];
+						if (el0->type == ACT_CA_CRC) {
+							for (int ct=0; ct < (int)el0->el_count; ct++) {
+								asn1p_constraint_t *el00 = el0->elements[ct];
+								if (el00->type == ACT_EL_VALUE && el00->value->type == ATV_REFERENCED) {
+									asn1p_ref_t *objectSetRef = el00->value->value.reference;
+									strcpy(elem->type, objectSetRef->components[0].name);
+								} else if (el00->type == ACT_EL_VALUE && el00->value->type == ATV_VALUESET) {
+									asn1p_constraint_t *valueSetConst = el00->value->value.constraint;
+									strcpy(elem->type, asn1f_printable_value(valueSetConst->containedSubtype));
+								} else {
+									fprintf(stderr, "Unexpected constraint type: %d or value type %d\n",
+											el00->type, el00->value->type);
+									return -1;
+								}
+							}
+						} else {
+							fprintf(stderr, "expected CA_CRC constraint. Got: %d of %s:%s\n",
+									el0->type, expr->Identifier, se->Identifier);
+							return -1;
+						}
+					} else {
+						fprintf(stderr, "Unexpected number of constraints in CA_SET: %d\n",
+								se->combined_constraints->el_count);
+						return -1;
+					}
+				} else {
+					struct asn1p_ref_component_s *comp = se->reference->components;
+					if (se->reference->comp_count == 2) {
+						sprintf(elem->type, "%s", (comp+1)->name);
+					} else if (se->reference->comp_count == 1) {
+						strcpy(elem->type, comp->name);
+					}
 				}
 			} else if (se->expr_type == A1TC_UNIVERVAL) { // for enum values
 				continue;
@@ -452,6 +503,8 @@ proto_constraint_print(const asn1p_constraint_t *ct, enum asn1print_flags2 flags
 		case ACT_EL_RLRANGE:
 			if (flags & APF_STRING_VALUE) {
 				strcat(result, "min_len: ");
+			} else if (flags & APF_REPEATED_VALUE) {
+				strcat(result, "min_items: ");
 			} else {
 				strcat(result, "gte: ");
 			}
@@ -460,6 +513,8 @@ proto_constraint_print(const asn1p_constraint_t *ct, enum asn1print_flags2 flags
 		case ACT_EL_ULRANGE:
 			if (flags & APF_STRING_VALUE) {
 				strcat(result, "min_len: ");
+			} else if (flags & APF_REPEATED_VALUE) {
+				strcat(result, "min_items: ");
 			} else {
 				strcat(result, "gt: ");
 			}
@@ -482,6 +537,8 @@ proto_constraint_print(const asn1p_constraint_t *ct, enum asn1print_flags2 flags
 		case ACT_EL_LLRANGE:
 			if (flags & APF_STRING_VALUE) {
 				strcat(result, "max_len: ");
+			} else if (flags & APF_REPEATED_VALUE) {
+				strcat(result, "max_items: ");
 			} else {
 				strcat(result, "lte: ");
 			}
@@ -490,6 +547,8 @@ proto_constraint_print(const asn1p_constraint_t *ct, enum asn1print_flags2 flags
 		case ACT_EL_ULRANGE:
 			if (flags & APF_STRING_VALUE) {
 				strcat(result, "max_len: ");
+			} else if (flags & APF_STRING_VALUE) {
+				strcat(result, "max_items: ");
 			} else {
 				strcat(result, "lt: ");
 			}
@@ -609,40 +668,83 @@ proto_constraint_print(const asn1p_constraint_t *ct, enum asn1print_flags2 flags
 static int
 asn1extract_columns(asn1p_expr_t *expr, proto_msg_t **proto_msgs, size_t *proto_msg_count,
 		char *mod_file) {
-	asn1p_ioc_row_t *row = *(expr->ioc_table->row);
-	char comment[100] = {};
-	strcpy(comment, "concrete instance of class ");
+	char comment[PROTO_COMMENTS_CHARS] = {};
+	char msgname[PROTO_NAME_CHARS] = {};
+
+	strcpy(comment, "concrete instance(s) of class ");
 	if (expr->reference != NULL && expr->reference->comp_count > 0) {
 		strcat(comment, expr->reference->components->name);
 	}
 	strcat(comment, " from \%s:\%d");
+	strcat(msgname, "_");
+	strcat(msgname, expr->Identifier);
 
-	proto_msg_t *new_proto_msg = proto_create_message(expr->Identifier, expr->spec_index, expr->_type_unique_index, comment, mod_file, expr->_lineno);
+	proto_msg_t *new_proto_msg = proto_create_message(msgname, expr->spec_index, expr->_type_unique_index, comment, mod_file, expr->_lineno);
 
-	for (int i = 0; i < (int)(expr->ioc_table->rows); i++) {
-		asn1p_ioc_row_t *rowi = row+i;
-		struct asn1p_ioc_cell_s *coli = rowi->column;
-		for (int j = 0; j < (int)(rowi->columns); j++) {
-			struct asn1p_ioc_cell_s *colij = coli+j;
-			if (colij->new_ref > 0) {
+	int rowIdx = 0;
+	int colIdx = 0;
+	proto_msg_oneof_t *oneof = NULL;
+	proto_msg_t *submsg = NULL;
+	if (expr->ioc_table->rows > 1) {
+		// Wrap the rows in a "one of"
+		oneof = proto_create_msg_oneof(expr->Identifier, NULL, mod_file, expr->_lineno);
+		proto_msg_add_oneof(new_proto_msg, oneof);
+	}
+	for (rowIdx = 0; rowIdx < (int)expr->ioc_table->rows; rowIdx++) {
+		asn1p_ioc_row_t *table_row = expr->ioc_table->row[rowIdx];
+		if (expr->ioc_table->rows > 1) {
+			sprintf(msgname, "%s%03d", expr->Identifier, rowIdx+1);
+			submsg = proto_create_message(msgname, -1, 0, NULL, mod_file, expr->_lineno);
+			proto_msg_add_nested(new_proto_msg, submsg);
+		}
+		for (colIdx = 0; colIdx < (int)table_row->columns; colIdx++) {
+			struct asn1p_ioc_cell_s colij = table_row->column[colIdx];
+			if (colij.new_ref > 0) {
 				char temptype[PROTO_TYPE_CHARS] = {};
 				char rules[PROTO_RULES_CHARS] = {};
-				if (colij->value && colij->value->value && colij->value->value->type == ATV_INTEGER) {
-					strcpy(temptype, "int32");
-					snprintf(rules, PROTO_RULES_CHARS, "int32.const = %d", (int)(colij->value->value->value.v_integer));
-				} else if (strcmp(colij->value->Identifier, "INTEGER") == 0) {
-					strcpy(temptype, "int32");
-				} else if (strcmp(colij->value->Identifier, "REAL") == 0) {
-					strcpy(temptype, "float");
-				} else {
-					snprintf(temptype, PROTO_TYPE_CHARS, "%s", colij->value->Identifier);
+				if (colij.value) {
+					if (colij.value->value) {
+						const char *pval = asn1f_printable_value(colij.value->value);
+						switch (colij.value->value->type) {
+						case ATV_INTEGER:
+							strcpy(temptype, "int32");
+							snprintf(rules, PROTO_RULES_CHARS, "int32.const = %d", (int)(colij.value->value->value.v_integer));
+							break;
+						case ATV_STRING:
+						case ATV_UNPARSED:
+							strcpy(temptype, "string");
+							snprintf(rules, PROTO_RULES_CHARS, "string.const = '%s'", pval);
+							break;
+						case ATV_REFERENCED:
+							snprintf(temptype, PROTO_TYPE_CHARS, "%s", colij.value->Identifier);
+							break;
+						default:
+							fprintf(stderr, "Unhandled value type %d %s\n", colij.value->value->type, pval);
+							return -1;
+						}
+					} else if (strcmp(colij.value->Identifier, "INTEGER") == 0) {
+						strcpy(temptype, "int32");
+					} else if (strcmp(colij.value->Identifier, "REAL") == 0) {
+						strcpy(temptype, "float");
+					} else {
+						snprintf(temptype, PROTO_TYPE_CHARS, "%s", colij.value->Identifier);
+					}
 				}
 				char tempname[PROTO_NAME_CHARS] = {};
-				snprintf(tempname, PROTO_NAME_CHARS, "%s-%s", colij->field->Identifier, colij->value->Identifier);
+				snprintf(tempname, PROTO_NAME_CHARS, "%s", colij.field->Identifier);
 
 				proto_msg_def_t *new_proto_msg_def = proto_create_msg_elem(tempname, temptype, rules);
-				proto_msg_add_elem(new_proto_msg, new_proto_msg_def);
+				if (submsg) {
+					proto_msg_add_elem(submsg, new_proto_msg_def);
+				} else {
+					proto_msg_add_elem(new_proto_msg, new_proto_msg_def);
+				}
 			}
+		}
+		if (submsg) {
+			proto_msg_def_t *oneof_msg_def = proto_create_msg_elem("test", msgname, NULL);
+			sprintf(oneof_msg_def->name, "instance%03d", rowIdx+1);
+			proto_oneof_add_elem(oneof, oneof_msg_def);
 		}
 	}
 
