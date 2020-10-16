@@ -128,7 +128,7 @@ toSnakeCaseDup(const char *mixedCase, const snake_case_e tocase) {
 			added = -1;
 			lastChanged = 1;
 		} else if ((tocase == SNAKECASE_LOWER && i > 0) && mixedCase[i] >= 'A' && mixedCase[i] <= 'Z' && lastChanged == 0) {
-			snakeCase = (char *)realloc(snakeCase, origlen + added + 1);
+			snakeCase = realloc(snakeCase, origlen + added + 1);
 			snakeCase[i+added] = '_';
 			snakeCase[i+added+1] = tolower(mixedCase[i]);
 			added++;
@@ -137,15 +137,19 @@ toSnakeCaseDup(const char *mixedCase, const snake_case_e tocase) {
 			snakeCase[i+added] = toupper(mixedCase[i]);
 			lastChanged = 1;
 		} else if (tocase == SNAKECASE_UPPER && i > 0 && mixedCase[i] >= 'A' && mixedCase[i] <= 'Z') {
-			snakeCase = (char *)realloc(snakeCase, origlen + added + 1);
-			snakeCase[i+added] = '_';
-			snakeCase[i+added+1] = toupper(mixedCase[i]);
-			added++;
-			lastChanged = 1;
+			if (mixedCase[i-1] >= 'A' && mixedCase[i-1] <= 'Z') {
+				snakeCase[i + added] = mixedCase[i];
+			} else {
+				snakeCase = realloc(snakeCase, origlen + added + 2);
+				snakeCase[i+added] = '_';
+				snakeCase[i+added+1] = toupper(mixedCase[i]);
+				added++;
+				lastChanged = 1;
+			}
 		} else if (tocase == SNAKECASE_LOWER && mixedCase[i] >= 'A' && mixedCase[i] <= 'Z') {
 			snakeCase[i+added] = tolower(mixedCase[i]);
 			lastChanged = 1;
-		} else if (mixedCase[i] == '-' || mixedCase[i] == '.') {
+		} else if (mixedCase[i] == '-' || mixedCase[i] == '.' || mixedCase[i] == '{' || mixedCase[i] == '}' || mixedCase[i] == ' ') {
 			snakeCase[i+added] = '_';
 			lastChanged = 1;
 		} else {
@@ -153,6 +157,10 @@ toSnakeCaseDup(const char *mixedCase, const snake_case_e tocase) {
 			lastChanged = 0;
 		}
 		i++;
+	}
+	if (snakeCase[i+added-1] == '_') {
+		// DO not leave the last character as underscore
+		snakeCase[i+added-1] = '\0';
 	}
 	snakeCase[i+added] = '\0';
 
@@ -237,13 +245,12 @@ print_entries(proto_msg_def_t **entry, size_t entries,
 static void
 proto_print_single_oneof(struct proto_msg_oneof_s *proto_oneof,
          enum asn1print_flags2 flags, int level, int andfree) {
-    INDENT("");
     if (strlen(proto_oneof->comments)) {
+        INDENT("");
         proto_print_comments(proto_oneof->comments);
     }
 
-    INDENT("");
-    safe_printf("oneof %s {\n", toSnakeCaseDup(proto_oneof->name, SNAKECASE_LOWER));
+    INDENT("oneof %s {\n", toSnakeCaseDup(proto_oneof->name, SNAKECASE_LOWER));
     level++;
     print_entries(proto_oneof->entry, proto_oneof->entries, flags, level, andfree);
     level--;
@@ -258,13 +265,17 @@ proto_print_single_msg(proto_msg_t *proto_msg, enum asn1print_flags2 flags,
 	}
 
 	char *namePc = toPascalCaseDup(proto_msg->name);
-	safe_printf("message %s {\n", namePc);
+	INDENT("message %s {\n", namePc);
 	free(namePc);
 	level++;
     print_entries(proto_msg->entry, proto_msg->entries, flags, level, andfree);
     for (int i=0; i < (int)(proto_msg->oneofs); i++) {
         struct proto_msg_oneof_s *proto_oneof  = proto_msg->oneof[i];
         proto_print_single_oneof(proto_oneof, flags, level, andfree);
+    }
+    for (int n=0; n < (int)proto_msg->nesteds; n++) {
+    	proto_msg_t *nested = proto_msg->nested[n];
+    	proto_print_single_msg(nested, flags, level, andfree);
     }
 	level--;
 	INDENT("};\n\n");

@@ -14,25 +14,53 @@ message Pair {
     int32 b = 2;
 };
 
-// concrete instance of class FUNCTION from 18a-class-OK.asn1:31
+// concrete instance(s) of class FUNCTION from 18a-class-OK.asn1:31
 message OperatorPlus {
-    int32 code_1 = 1 [(validate.v1.rules).int32.const = 1];
-    Pair arg_type_pair = 2;
-    int32 result_type_integer = 3;
+    int32 code = 1 [(validate.v1.rules).int32.const = 1];
+    Pair arg_type = 2;
+    int32 result_type = 3;
 };
 
-// concrete instance of class FUNCTION from 18a-class-OK.asn1:38
+// concrete instance(s) of class FUNCTION from 18a-class-OK.asn1:38
 message OperatorSquare {
-    int32 code_2 = 1 [(validate.v1.rules).int32.const = 2];
-    int32 arg_type_integer = 2;
-    int32 result_type_integer = 3;
+    int32 code = 1 [(validate.v1.rules).int32.const = 2];
+    int32 arg_type = 2;
+    int32 result_type = 3;
 };
 
-// concrete instance of class FUNCTION from 18a-class-OK.asn1:45
+// concrete instance(s) of class FUNCTION from 18a-class-OK.asn1:45
 message OperatorRoot {
-    int32 code_3 = 1 [(validate.v1.rules).int32.const = 3];
-    int32 arg_type_integer = 2;
-    int32 unused_integer = 3;
-    float result_type_real = 4;
+    int32 code = 1 [(validate.v1.rules).int32.const = 3];
+    int32 arg_type = 2;
+    int32 unused = 3;
+    float result_type = 4;
+};
+
+// concrete instance(s) of class FUNCTION from 18a-class-OK.asn1:53
+message Functions {
+    oneof functions {
+        Functions001 instance001 = 1;
+        Functions002 instance002 = 2;
+        Functions003 instance003 = 3;
+    }
+    message Functions001 {
+        int32 code = 1 [(validate.v1.rules).int32.const = 1];
+        Pair arg_type = 2;
+        int32 result_type = 3;
+    };
+
+    message Functions002 {
+        int32 code = 1 [(validate.v1.rules).int32.const = 2];
+        int32 arg_type = 2;
+        int32 result_type = 3;
+    };
+
+    message Functions003 {
+        int32 code = 1 [(validate.v1.rules).int32.const = 3];
+        int32 arg_type = 2;
+        int32 unused = 3;
+        float result_type = 4;
+    };
+
 };
 

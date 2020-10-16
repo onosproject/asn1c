@@ -23,6 +23,8 @@
 #define PROTO_COMMENTS_CHARS 200
 #define PROTO_PATH_CHARS 200
 
+#define CLASS_IDENTIFIER "&id"
+
 typedef enum {
     PROTO_PARAM_TYPE,
     PROTO_PARAM_VALUE,
@@ -61,6 +63,8 @@ typedef struct proto_msg_s {
 	size_t oneofs;
     struct proto_param_s **param;
     size_t params;
+    struct proto_msg_s **nested;
+    size_t nesteds;
 	char comments[PROTO_COMMENTS_CHARS]; // Include new lines if necessary
 } proto_msg_t;
 
@@ -107,7 +111,8 @@ proto_msg_def_t *proto_create_msg_elem(const char *name, const char *type, const
 void proto_msg_add_param(proto_msg_t *msg, proto_param_t *param);
 void proto_msg_add_elem(proto_msg_t *msg, proto_msg_def_t *elem);
 void proto_msg_add_oneof(proto_msg_t *msg, proto_msg_oneof_t *oneof);
-//void proto_oneof_add_msg(proto_msg_oneof_t *oneof, proto_msg_def_t *elem);
+void proto_msg_add_nested(proto_msg_t *msg, proto_msg_t *nested);
+void proto_oneof_add_elem(proto_msg_oneof_t *oneof, proto_msg_def_t *elem);
 void proto_messages_add_msg(proto_msg_t **messages, size_t *message_count, proto_msg_t *msg);
 proto_import_t *proto_create_import(const char *path, asn1p_oid_t *oid);
 char *proto_remove_rel_path(char *path);
