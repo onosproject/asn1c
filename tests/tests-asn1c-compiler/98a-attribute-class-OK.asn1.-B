@@ -16,36 +16,16 @@ message Attribute {
 
 // concrete instance(s) of class ATTRIBUTE from 98a-attribute-class-OK.asn1:27
 message Attributes {
-    oneof attributes {
-        Attributes001 instance001 = 1;
-        Attributes002 instance002 = 2;
-        Attributes003 instance003 = 3;
-        Attributes004 instance004 = 4;
-    }
-    message Attributes001 {
-        Raf id = 1;
-        int32 power = 2 [(validate.v1.rules).int32.const = 10];
-        string nametag = 3 [(validate.v1.rules).string.const = 'nameraf'];
-    };
-
-    message Attributes002 {
-        Rcf id = 1;
-        int32 power = 2 [(validate.v1.rules).int32.const = 20];
-        string nametag = 3 [(validate.v1.rules).string.const = 'namercf'];
-    };
-
-    message Attributes003 {
-        string id = 1 [(validate.v1.rules).string.const = '{3 2 3}'];
-        int32 power = 2 [(validate.v1.rules).int32.const = 30];
-        string nametag = 3 [(validate.v1.rules).string.const = 'namerdf'];
-    };
-
-    message Attributes004 {
+    message Attributes324 {
         string id = 1 [(validate.v1.rules).string.const = '{3 2 4}'];
         int32 power = 2 [(validate.v1.rules).int32.const = 50];
         string nametag = 3 [(validate.v1.rules).string.const = 'nameref'];
     };
 
+    RafService raf_service = 1;
+    RcfService rcf_service = 2;
+    RdfService rdf_service = 3;
+    Attributes324 attribute_3_2_4 = 4;
 };
 
 // concrete instance(s) of class ATTRIBUTE from 98a-attribute-class-OK.asn1:29

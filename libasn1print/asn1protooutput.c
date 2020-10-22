@@ -91,7 +91,8 @@ toPascalCaseDup(char *mixedCase) {
 	int removed = 0;
 	int lastWasUpper = 0;
 	while(mixedCase[i]) {
-		if (mixedCase[i] == '-' || mixedCase[i] == '&' || mixedCase[i] == '_') {
+		if (mixedCase[i] == '-' || mixedCase[i] == '&' || mixedCase[i] == '_'
+				|| mixedCase[i] == '{' || mixedCase[i] == '}' || mixedCase[i] == ' ') {
 			pascalCaseDup[i-removed] = toupper(mixedCase[i+1]);
 			i++;
 			removed++;
@@ -123,8 +124,8 @@ toSnakeCaseDup(const char *mixedCase, const snake_case_e tocase) {
 	int lastChanged = 0;
 	char *snakeCase = strdup(mixedCase);
 	int origlen = strlen(mixedCase);
-	while(mixedCase[i]) {
-		if (i == 0 && mixedCase[i] == '&') {
+	while(mixedCase[i] != '\0') {
+		if (i == 0 && (mixedCase[i] == '&' || mixedCase[i] == '_')) {
 			added = -1;
 			lastChanged = 1;
 		} else if ((tocase == SNAKECASE_LOWER && i > 0) && mixedCase[i] >= 'A' && mixedCase[i] <= 'Z' && lastChanged == 0) {
@@ -161,6 +162,9 @@ toSnakeCaseDup(const char *mixedCase, const snake_case_e tocase) {
 	if (snakeCase[i+added-1] == '_') {
 		// DO not leave the last character as underscore
 		snakeCase[i+added-1] = '\0';
+	}
+	if (snakeCase[0] == '_') {
+		snakeCase[0] = tocase == SNAKECASE_LOWER ? 'a':'A';
 	}
 	snakeCase[i+added] = '\0';
 
@@ -257,9 +261,38 @@ proto_print_single_oneof(struct proto_msg_oneof_s *proto_oneof,
     INDENT("}\n");
 }
 
+static char *proto_msg_serialized(proto_msg_t *message) {
+	char *serialized = malloc(PROTO_COMMENTS_CHARS * 10);
+	memset(serialized, 0, PROTO_COMMENTS_CHARS * 10);
+    for (int i=0; i < (int)(message->entries); i++) {
+		struct proto_msg_def_s *proto_msg_def  = message->entry[i];
+		if (proto_msg_def->repeated > 0) {
+			strcat(serialized, "repeated ");
+		}
+		char *typePc;
+		if (strstr(PROTOSCALARTYPES, proto_msg_def->type) != NULL) {
+			typePc = strdup(proto_msg_def->type);
+		} else {
+			typePc = toPascalCaseDup(proto_msg_def->type);
+		}
+		char *nameLsc = toSnakeCaseDup(proto_msg_def->name, SNAKECASE_LOWER);
+		char temp[PROTO_COMMENTS_CHARS] = {};
+		sprintf(temp, "%s %s = %d", typePc, nameLsc, i+1);
+		free(typePc);
+		free(nameLsc);
+		strcat(serialized, temp);
+		if (strlen(proto_msg_def->rules) > 0) {
+			sprintf(temp, " [(validate.v1.rules).%s]", proto_msg_def->rules);
+			strcat(serialized, temp);
+		}
+    }
+    return serialized; // Don't forget to free
+}
+
 static void
-proto_print_single_msg(proto_msg_t *proto_msg, enum asn1print_flags2 flags,
-		int level, int andfree) {
+proto_print_single_msg(proto_msg_t *proto_msg,
+		proto_msg_t **all_messages, size_t all_messages_count,
+		enum asn1print_flags2 flags, int level) {
 	if (strlen(proto_msg->comments)) {
 		proto_print_comments(proto_msg->comments);
 	}
@@ -268,14 +301,55 @@ proto_print_single_msg(proto_msg_t *proto_msg, enum asn1print_flags2 flags,
 	INDENT("message %s {\n", namePc);
 	free(namePc);
 	level++;
-    print_entries(proto_msg->entry, proto_msg->entries, flags, level, andfree);
-    for (int i=0; i < (int)(proto_msg->oneofs); i++) {
+
+	// In case there are nested elements without a proper name
+	// check if there is a top level type with the same attributes
+	// and use that instead.
+	char *nested_elem_str = NULL;
+	char *top_msg_str = NULL;
+	char *matchNamePc = NULL;
+	char *matchNameSc = NULL;
+	int am = 0;
+	if ((int)proto_msg->nesteds > 0) {
+		for (int n=0; n < (int)proto_msg->nesteds; n++) {
+			// See if there's a matching definition in the set of top level messages
+			nested_elem_str = proto_msg_serialized(proto_msg->nested[n]);
+			// Iterate through all messages to see if we have a match
+			for (am=0; am < (int)all_messages_count; am++) {
+				top_msg_str = proto_msg_serialized(all_messages[am]);
+				if (strcmp(top_msg_str, nested_elem_str) == 0) {
+					matchNamePc = toPascalCaseDup(all_messages[am]->name);
+					matchNameSc = toSnakeCaseDup(all_messages[am]->name, SNAKECASE_LOWER);
+					free(top_msg_str);
+					top_msg_str = NULL;
+					break;
+				}
+				free(top_msg_str);
+				top_msg_str = NULL;
+			}
+			free(nested_elem_str);
+			nested_elem_str = NULL;
+			if (matchNamePc == NULL) {
+				proto_print_single_msg(proto_msg->nested[n], all_messages, all_messages_count, flags, level);
+			} else {
+				// Replace the entry that referred to this nested message
+				// Assumes there are no other entries other than object set entries
+				if ((int)proto_msg->entries > n) {
+					strcpy(proto_msg->entry[n]->type, matchNamePc);
+					strcpy(proto_msg->entry[n]->name, matchNameSc);
+				}
+			}
+			free(matchNamePc);
+			matchNamePc = NULL;
+			free(matchNameSc);
+			matchNameSc = NULL;
+		}
+	}
+
+    print_entries(proto_msg->entry, proto_msg->entries, flags, level, 0);
+    for (int i = 0; i < (int)(proto_msg->oneofs); i++) {
         struct proto_msg_oneof_s *proto_oneof  = proto_msg->oneof[i];
-        proto_print_single_oneof(proto_oneof, flags, level, andfree);
-    }
-    for (int n=0; n < (int)proto_msg->nesteds; n++) {
-    	proto_msg_t *nested = proto_msg->nested[n];
-    	proto_print_single_msg(nested, flags, level, andfree);
+        proto_print_single_oneof(proto_oneof, flags, level, 0);
     }
 	level--;
 	INDENT("};\n\n");
@@ -343,12 +417,12 @@ void proto_print_msg(proto_module_t *proto_module, enum asn1print_flags2 flags, 
 
 	safe_printf("\nsyntax = \"proto3\";\n\n");
 
-	char *sourceFileLc = toSnakeCaseDup(proto_module->srcfilename, SNAKECASE_LOWER);
-	char *srcNoRelPath = proto_remove_rel_path(sourceFileLc);
-	if (startNotLcLetter(srcNoRelPath) == 0) {
-		safe_printf("package %s.v1;\n\n", srcNoRelPath);
+	char *srcNoRelPath = proto_remove_rel_path(proto_module->srcfilename);
+	char *sourceFileSc = toSnakeCaseDup(srcNoRelPath, SNAKECASE_LOWER);
+	if (startNotLcLetter(sourceFileSc) == 0) {
+		safe_printf("package %s.v1;\n\n", sourceFileSc);
 	} else {
-		safe_printf("package pkg%s.v1;\n\n", srcNoRelPath);
+		safe_printf("package pkg%s.v1;\n\n", sourceFileSc);
 	}
 
 	for (int i = 0; i < (int)(proto_module->imports); i++) {
@@ -356,9 +430,9 @@ void proto_print_msg(proto_module_t *proto_module, enum asn1print_flags2 flags, 
 		proto_import_t *proto_importn = proto_import[i];
 		char* importName = toLowercaseDup(proto_importn->path);
 		if (startNotLcLetter(srcNoRelPath) == 0) {
-			safe_printf("import \"%s/v1/%s.proto\";", srcNoRelPath, importName);
+			safe_printf("import \"%s/v1/%s.proto\";", sourceFileSc, importName);
 		} else {
-			safe_printf("import \"pkg%s/v1/%s.proto\";", srcNoRelPath, importName);
+			safe_printf("import \"pkg%s/v1/%s.proto\";", sourceFileSc, importName);
 		}
 		free(importName);
 		if (proto_importn->oid != NULL) {
@@ -367,6 +441,7 @@ void proto_print_msg(proto_module_t *proto_module, enum asn1print_flags2 flags, 
 		}
 		safe_printf("\n");
 	}
+	free(sourceFileSc);
 
 	safe_printf("import \"validate/v1/validate.proto\";\n\n");
 
@@ -381,11 +456,7 @@ void proto_print_msg(proto_module_t *proto_module, enum asn1print_flags2 flags, 
 
 	for (int i = 0; i < (int)(proto_module->messages); i++) {
 		proto_msg_t *message = proto_module->message[i];
-		proto_print_single_msg(message, flags, level, andfree);
-		if (andfree) {
-			free(message);
-			proto_module->message[i] = NULL;
-		}
+		proto_print_single_msg(message, proto_module->message, proto_module->messages, flags, level);
 	}
 
 	if (andfree) {

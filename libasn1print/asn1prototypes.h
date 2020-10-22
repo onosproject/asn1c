@@ -17,13 +17,16 @@
 
 #include <asn1parser.h>
 
-#define PROTO_NAME_CHARS 50
-#define PROTO_TYPE_CHARS 50
+#define PROTO_NAME_CHARS 70
+#define PROTO_TYPE_CHARS 70
 #define PROTO_RULES_CHARS 100
 #define PROTO_COMMENTS_CHARS 200
 #define PROTO_PATH_CHARS 200
 
-#define CLASS_IDENTIFIER "&id"
+#define USUAL_CLASS_IDENTIFIERS 2
+#define USUAL_CLASS_IDENTIFIER_LEN 20
+#define USUAL_CLASS_IDENTIFIER_1 "&id"
+#define USUAL_CLASS_IDENTIFIER_2 "&procedureCode"
 
 typedef enum {
     PROTO_PARAM_TYPE,

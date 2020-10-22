@@ -30,6 +30,11 @@
 
 static abuf all_output_;
 
+char usual_class_identifiers[USUAL_CLASS_IDENTIFIERS][USUAL_CLASS_IDENTIFIER_LEN] = {
+	{USUAL_CLASS_IDENTIFIER_1},
+	{USUAL_CLASS_IDENTIFIER_2}
+};
+
 typedef enum {
     PRINT_STDOUT,
     GLOBAL_BUFFER,
@@ -683,13 +688,8 @@ asn1extract_columns(asn1p_expr_t *expr, proto_msg_t **proto_msgs, size_t *proto_
 
 	int rowIdx = 0;
 	int colIdx = 0;
-	proto_msg_oneof_t *oneof = NULL;
+	char instanceName[PROTO_NAME_CHARS] = {};
 	proto_msg_t *submsg = NULL;
-	if (expr->ioc_table->rows > 1) {
-		// Wrap the rows in a "one of"
-		oneof = proto_create_msg_oneof(expr->Identifier, NULL, mod_file, expr->_lineno);
-		proto_msg_add_oneof(new_proto_msg, oneof);
-	}
 	for (rowIdx = 0; rowIdx < (int)expr->ioc_table->rows; rowIdx++) {
 		asn1p_ioc_row_t *table_row = expr->ioc_table->row[rowIdx];
 		if (expr->ioc_table->rows > 1) {
@@ -699,39 +699,46 @@ asn1extract_columns(asn1p_expr_t *expr, proto_msg_t **proto_msgs, size_t *proto_
 		}
 		for (colIdx = 0; colIdx < (int)table_row->columns; colIdx++) {
 			struct asn1p_ioc_cell_s colij = table_row->column[colIdx];
-			if (colij.new_ref > 0) {
-				char temptype[PROTO_TYPE_CHARS] = {};
-				char rules[PROTO_RULES_CHARS] = {};
-				if (colij.value) {
-					if (colij.value->value) {
-						const char *pval = asn1f_printable_value(colij.value->value);
-						switch (colij.value->value->type) {
-						case ATV_INTEGER:
-							strcpy(temptype, "int32");
-							snprintf(rules, PROTO_RULES_CHARS, "int32.const = %d", (int)(colij.value->value->value.v_integer));
-							break;
-						case ATV_STRING:
-						case ATV_UNPARSED:
-							strcpy(temptype, "string");
-							snprintf(rules, PROTO_RULES_CHARS, "string.const = '%s'", pval);
-							break;
-						case ATV_REFERENCED:
-							snprintf(temptype, PROTO_TYPE_CHARS, "%s", colij.value->Identifier);
-							break;
-						default:
-							fprintf(stderr, "Unhandled value type %d %s\n", colij.value->value->type, pval);
-							return -1;
-						}
-					} else if (strcmp(colij.value->Identifier, "INTEGER") == 0) {
+			char temptype[PROTO_TYPE_CHARS] = {};
+			char rules[PROTO_RULES_CHARS] = {};
+			if (colij.value) {
+				if (colij.value->value) {
+					const char *pval = asn1f_printable_value(colij.value->value);
+					switch (colij.value->value->type) {
+					case ATV_INTEGER:
 						strcpy(temptype, "int32");
-					} else if (strcmp(colij.value->Identifier, "REAL") == 0) {
-						strcpy(temptype, "float");
-					} else {
+						snprintf(rules, PROTO_RULES_CHARS, "int32.const = %d", (int)(colij.value->value->value.v_integer));
+						break;
+					case ATV_STRING:
+					case ATV_UNPARSED:
+						strcpy(temptype, "string");
+						snprintf(rules, PROTO_RULES_CHARS, "string.const = '%s'", pval);
+						break;
+					case ATV_REFERENCED:
 						snprintf(temptype, PROTO_TYPE_CHARS, "%s", colij.value->Identifier);
+						break;
+					default:
+						fprintf(stderr, "Unhandled value type %d %s\n", colij.value->value->type, pval);
+						return -1;
 					}
+				} else if (strcmp(colij.value->Identifier, "INTEGER") == 0) {
+					strcpy(temptype, "int32");
+				} else if (strcmp(colij.value->Identifier, "REAL") == 0) {
+					strcpy(temptype, "float");
+				} else {
+					snprintf(temptype, PROTO_TYPE_CHARS, "%s", colij.value->Identifier);
 				}
 				char tempname[PROTO_NAME_CHARS] = {};
 				snprintf(tempname, PROTO_NAME_CHARS, "%s", colij.field->Identifier);
+				for (int u=0; u < USUAL_CLASS_IDENTIFIERS; u++ ) {
+					if (strcmp(usual_class_identifiers[u], colij.field->Identifier) == 0) {
+						sprintf(instanceName, "%s%s", expr->reference->components->name, asn1f_printable_value(colij.value->value));
+						if (submsg) {
+							sprintf(submsg->name, "%s%s", expr->Identifier, asn1f_printable_value(colij.value->value));
+						}
+						break;
+					}
+				}
 
 				proto_msg_def_t *new_proto_msg_def = proto_create_msg_elem(tempname, temptype, rules);
 				if (submsg) {
@@ -742,9 +749,14 @@ asn1extract_columns(asn1p_expr_t *expr, proto_msg_t **proto_msgs, size_t *proto_
 			}
 		}
 		if (submsg) {
-			proto_msg_def_t *oneof_msg_def = proto_create_msg_elem("test", msgname, NULL);
-			sprintf(oneof_msg_def->name, "instance%03d", rowIdx+1);
-			proto_oneof_add_elem(oneof, oneof_msg_def);
+			proto_msg_def_t *nested_msg_def = proto_create_msg_elem("test", msgname, NULL);
+			if (strlen(instanceName) > 0) {
+				strcpy(nested_msg_def->name, instanceName);
+				sprintf(nested_msg_def->type, "%s", submsg->name);
+			} else {
+				sprintf(nested_msg_def->name, "instance%03d", rowIdx+1);
+			}
+			proto_msg_add_elem(new_proto_msg, nested_msg_def);
 		}
 	}
 
