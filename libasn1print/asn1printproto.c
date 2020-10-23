@@ -109,6 +109,55 @@ proto_param_type(struct asn1p_param_s *param) {
 }
 
 static char *
+format_bit_vector_const(asn1p_value_t *v) {
+	char *managedptr = NULL;
+	uint8_t *bitvector;
+	char *ptr;
+	size_t len;
+	int i = 0;
+	/*
+	 * Compute number of bytes necessary
+	 * to represent the binary value.
+	 */
+	int bits = v->value.binary_vector.size_in_bits;
+	len = ((bits%8)?((bits>>2)+1)*2:(bits >> 2)*2);
+	managedptr = malloc(len);
+	memset(managedptr, 0, len);
+	/*
+	 * Fill the buffer.
+	 */
+	ptr = managedptr;
+	bitvector = v->value.binary_vector.bits;
+	static const char *hextable="0123456789ABCDEF";
+	int extra = bits%8;
+	if(extra) {
+		*ptr++ = '\\';
+		*ptr++ = 'x';
+		*ptr++ = '0';
+		*ptr++ = hextable[bitvector[0] >> extra];
+
+		for(i = 1; i < ((bits+8-extra) >> 3); i++) {
+			*ptr++ = '\\';
+			*ptr++ = 'x';
+			*ptr++ = hextable[bitvector[i-1] & 0x0f];
+			*ptr++ = hextable[bitvector[i] >> 4];
+		}
+	} else {
+		for(i = 0; i < ((bits) >> 3); i++) {
+			*ptr++ = '\\';
+			*ptr++ = 'x';
+			*ptr++ = hextable[bitvector[i] >> 4];
+			*ptr++ = hextable[bitvector[i] & 0x0f];
+		}
+	}
+	if (len != (size_t)(ptr - managedptr)) {
+		fprintf(stderr, "unexpected. Bits %d. len %lu != %lu\n", bits, len, (size_t)(ptr - managedptr));
+	}
+	assert(len == (size_t)(ptr - managedptr));
+	return managedptr;
+}
+
+static char *
 proto_extract_params(proto_msg_t *msg, asn1p_expr_t *expr) {
 	char *params_comments = malloc(PROTO_COMMENTS_CHARS);
 	memset(params_comments, 0, PROTO_COMMENTS_CHARS);
@@ -177,6 +226,24 @@ asn1print_expr_proto(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *expr,
 					"constant Basic OID from %s:%d", mod->source_file_name, expr->_lineno);
 			msgelem = proto_create_msg_elem("value", "string", NULL);
 			sprintf(msgelem->rules, "string.const = '%s'", asn1f_printable_value(expr->value));
+			proto_msg_add_elem(msg, msgelem);
+			proto_messages_add_msg(message, messages, msg);
+
+			break;
+		case ASN_BASIC_OCTET_STRING:
+			msg = proto_create_message(expr->Identifier, expr->spec_index, expr->_type_unique_index,
+					"constant Basic OCTET STRING from %s:%d", mod->source_file_name, expr->_lineno);
+			msgelem = proto_create_msg_elem("value", "bytes", NULL);
+			char *byte_string = NULL;
+			switch (expr->value->type) {
+			case ATV_BITVECTOR:
+				byte_string = format_bit_vector_const(expr->value);
+				break;
+			default:
+				fprintf(stderr, "Unhandled conversion of OCTET_STRING const from type %d", expr->value->type);
+			}
+			sprintf(msgelem->rules, "bytes.const = '%s'", byte_string);
+			free((void *) byte_string);
 			proto_msg_add_elem(msg, msgelem);
 			proto_messages_add_msg(message, messages, msg);
 

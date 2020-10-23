@@ -5,6 +5,7 @@
 syntax = "proto3";
 
 package pkg1001_dash_module_ok_asn1.v1;
+option go_package = "pkg1001_dash_module_ok_asn1/v1/module-with-dashes";
 
 import "validate/v1/validate.proto";
 

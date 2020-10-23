@@ -5,6 +5,7 @@
 syntax = "proto3";
 
 package pkg00_empty_ok_asn1.v1;
+option go_package = "pkg00_empty_ok_asn1/v1/moduletestempty";
 
 import "validate/v1/validate.proto";
 
