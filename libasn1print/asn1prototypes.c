@@ -24,8 +24,8 @@ char *
 proto_remove_rel_path(char *path) {
 	int count = 0;
 	char *newStart = path;
-	while (strstr(newStart, "__/") != NULL) {
-		if (strcmp(newStart, strstr(newStart, "__/")) == 0) {
+	while (strstr(newStart, "../") != NULL) {
+		if (strcmp(newStart, strstr(newStart, "../")) == 0) {
 			newStart = newStart+3;
 			count++;
 		}

@@ -38,29 +38,8 @@ message OperatorRoot {
 
 // concrete instance(s) of class FUNCTION from 18a-class-OK.asn1:53
 message Functions {
-    oneof functions {
-        Functions001 instance001 = 1;
-        Functions002 instance002 = 2;
-        Functions003 instance003 = 3;
-    }
-    message Functions001 {
-        int32 code = 1 [(validate.v1.rules).int32.const = 1];
-        Pair arg_type = 2;
-        int32 result_type = 3;
-    };
-
-    message Functions002 {
-        int32 code = 1 [(validate.v1.rules).int32.const = 2];
-        int32 arg_type = 2;
-        int32 result_type = 3;
-    };
-
-    message Functions003 {
-        int32 code = 1 [(validate.v1.rules).int32.const = 3];
-        int32 arg_type = 2;
-        int32 unused = 3;
-        float result_type = 4;
-    };
-
+    OperatorPlus operator_plus = 1;
+    OperatorSquare operator_square = 2;
+    OperatorRoot operator_root = 3;
 };
 
