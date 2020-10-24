@@ -50,6 +50,7 @@ lint:
     - FILE_LOWER_SNAKE_CASE
   except:
     - ENUM_ZERO_VALUE_SUFFIX
+    - PACKAGE_SAME_GO_PACKAGE
 EOF
 
 	ec=0

@@ -400,7 +400,6 @@ void proto_print_msg(proto_module_t *proto_module, enum asn1print_flags2 flags, 
 
 	char *moduleNameLc = toLowercaseDup(proto_module->modulename);
 	safe_printf("////////////////////// %s.proto //////////////////////\n", moduleNameLc);
-	free(moduleNameLc);
 	safe_printf("// Protobuf generated");
 	if(strlen(proto_module->srcfilename) > 0 && strrchr(proto_module->srcfilename, '/') != NULL) {
 		safe_printf(" from %s ", strrchr(proto_module->srcfilename, '/'));
@@ -420,10 +419,13 @@ void proto_print_msg(proto_module_t *proto_module, enum asn1print_flags2 flags, 
 	char *srcNoRelPath = proto_remove_rel_path(proto_module->srcfilename);
 	char *sourceFileSc = toSnakeCaseDup(srcNoRelPath, SNAKECASE_LOWER);
 	if (startNotLcLetter(sourceFileSc) == 0) {
-		safe_printf("package %s.v1;\n\n", sourceFileSc);
+		safe_printf("package %s.v1;\n", sourceFileSc);
+		safe_printf("option go_package = \"%s/v1/%s\";\n\n", sourceFileSc, moduleNameLc);
 	} else {
-		safe_printf("package pkg%s.v1;\n\n", sourceFileSc);
+		safe_printf("package pkg%s.v1;\n", sourceFileSc);
+		safe_printf("option go_package = \"pkg%s/v1/%s\";\n\n", sourceFileSc, moduleNameLc);
 	}
+	free(moduleNameLc);
 
 	for (int i = 0; i < (int)(proto_module->imports); i++) {
 		proto_import_t **proto_import = proto_module->import;

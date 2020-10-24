@@ -5,6 +5,7 @@
 syntax = "proto3";
 
 package pkg03_enum_ok_asn1.v1;
+option go_package = "pkg03_enum_ok_asn1/v1/moduletestenum1";
 
 import "validate/v1/validate.proto";
 
