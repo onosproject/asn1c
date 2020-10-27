@@ -129,7 +129,7 @@ toSnakeCaseDup(const char *mixedCase, const snake_case_e tocase) {
 			added = -1;
 			lastChanged = 1;
 		} else if ((tocase == SNAKECASE_LOWER && i > 0) && mixedCase[i] >= 'A' && mixedCase[i] <= 'Z' && lastChanged == 0) {
-			snakeCase = realloc(snakeCase, origlen + added + 1);
+			snakeCase = realloc(snakeCase, origlen + added + 2);
 			snakeCase[i+added] = '_';
 			snakeCase[i+added+1] = tolower(mixedCase[i]);
 			added++;
