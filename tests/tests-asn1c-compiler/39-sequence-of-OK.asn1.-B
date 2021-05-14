@@ -10,14 +10,16 @@ option go_package = "pkg39_sequence_of_ok_asn1/v1/modulenestedsequenceof";
 import "validate/v1/validate.proto";
 
 // sequence from 39-sequence-of-OK.asn1:15
+// {T}
 message T {
-    int32 int = 1;
-    repeated T2 collection = 2;
+    int32 int = 1 [ json_name="int"];
+    repeated T2 collection = 2 [ json_name="collection"];
 };
 
 // sequence from 39-sequence-of-OK.asn1:20
+// {T2}
 message T2 {
-    bool flag = 1;
-    string str = 2;
+    bool flag = 1 [ json_name="flag"];
+    string str = 2 [ json_name="str"];
 };
 

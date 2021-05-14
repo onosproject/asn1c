@@ -10,53 +10,61 @@ option go_package = "pkg98a_attribute_class_ok_asn1/v1/moduleattributeclass";
 import "validate/v1/validate.proto";
 
 // sequence from 98a-attribute-class-OK.asn1:21
+// {Attribute}
 message Attribute {
-    Attributes identifier = 1;
-    int32 si_attribute_value = 2;
+    Attributes identifier = 1 [ json_name="identifier"];
+    int32 si_attribute_value = 2 [ json_name="siAttributeValue"];
 };
 
 // concrete instance(s) of class ATTRIBUTE from 98a-attribute-class-OK.asn1:27
+// {_Attributes}
 message Attributes {
+// {Attributes{3 2 4}}
     message Attributes324 {
-        string id = 1 [(validate.v1.rules).string.const = '{3 2 4}'];
-        int32 power = 2 [(validate.v1.rules).int32.const = 50];
-        string nametag = 3 [(validate.v1.rules).string.const = 'nameref'];
+        string id = 1 [(validate.v1.rules).string.const = '{3 2 4}', json_name="&id"];
+        int32 power = 2 [(validate.v1.rules).int32.const = 50, json_name="&power"];
+        string nametag = 3 [(validate.v1.rules).string.const = 'nameref', json_name="&nametag"];
     };
 
-    RafService raf_service = 1;
-    RcfService rcf_service = 2;
-    RdfService rdf_service = 3;
-    Attributes324 attribute_3_2_4 = 4;
+    RafService raf_service = 1 [ json_name="raf_service"];
+    RcfService rcf_service = 2 [ json_name="rcf_service"];
+    RdfService rdf_service = 3 [ json_name="rdf_service"];
+    Attributes324 attribute_3_2_4 = 4 [ json_name="ATTRIBUTE{3 2 4}"];
 };
 
 // concrete instance(s) of class ATTRIBUTE from 98a-attribute-class-OK.asn1:29
+// {_rafService}
 message RafService {
-    Raf id = 1;
-    int32 power = 2 [(validate.v1.rules).int32.const = 10];
-    string nametag = 3 [(validate.v1.rules).string.const = 'nameraf'];
+    Raf id = 1 [ json_name="&id"];
+    int32 power = 2 [(validate.v1.rules).int32.const = 10, json_name="&power"];
+    string nametag = 3 [(validate.v1.rules).string.const = 'nameraf', json_name="&nametag"];
 };
 
 // concrete instance(s) of class ATTRIBUTE from 98a-attribute-class-OK.asn1:30
+// {_rcfService}
 message RcfService {
-    Rcf id = 1;
-    int32 power = 2 [(validate.v1.rules).int32.const = 20];
-    string nametag = 3 [(validate.v1.rules).string.const = 'namercf'];
+    Rcf id = 1 [ json_name="&id"];
+    int32 power = 2 [(validate.v1.rules).int32.const = 20, json_name="&power"];
+    string nametag = 3 [(validate.v1.rules).string.const = 'namercf', json_name="&nametag"];
 };
 
 // concrete instance(s) of class ATTRIBUTE from 98a-attribute-class-OK.asn1:31
+// {_rdfService}
 message RdfService {
-    string id = 1 [(validate.v1.rules).string.const = '{3 2 3}'];
-    int32 power = 2 [(validate.v1.rules).int32.const = 30];
-    string nametag = 3 [(validate.v1.rules).string.const = 'namerdf'];
+    string id = 1 [(validate.v1.rules).string.const = '{3 2 3}', json_name="&id"];
+    int32 power = 2 [(validate.v1.rules).int32.const = 30, json_name="&power"];
+    string nametag = 3 [(validate.v1.rules).string.const = 'namerdf', json_name="&nametag"];
 };
 
 // constant Basic OID from 98a-attribute-class-OK.asn1:34
+// {-}
 message Raf {
-    string value = 1 [(validate.v1.rules).string.const = '{3 2 1}'];
+    string value = 1 [(validate.v1.rules).string.const = '{3 2 1}', json_name="value"];
 };
 
 // constant Basic OID from 98a-attribute-class-OK.asn1:35
+// {-}
 message Rcf {
-    string value = 1 [(validate.v1.rules).string.const = '{3 2 2}'];
+    string value = 1 [(validate.v1.rules).string.const = '{3 2 2}', json_name="value"];
 };
 

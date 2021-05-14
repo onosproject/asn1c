@@ -48,6 +48,7 @@ typedef struct proto_msg_def_s {
 	char rules[PROTO_RULES_CHARS];
 	char comments[PROTO_COMMENTS_CHARS];
     int repeated;
+    enum asn1p_expr_marker_e marker;
 } proto_msg_def_t;
 
 typedef struct proto_msg_oneof_s {
@@ -69,6 +70,7 @@ typedef struct proto_msg_s {
     struct proto_msg_s **nested;
     size_t nesteds;
 	char comments[PROTO_COMMENTS_CHARS]; // Include new lines if necessary
+	int isConstant;
 } proto_msg_t;
 
 typedef struct proto_enum_def_s {
@@ -108,7 +110,7 @@ proto_enum_t *proto_create_enum(const char *name, const char *comment_fmt, char 
 proto_enum_def_t *proto_create_enum_def(const char* name, const int index, const char *comment);
 void proto_enum_add_def(proto_enum_t *protoenum, proto_enum_def_t *def);
 void proto_enums_add_enum(proto_enum_t **protoenums, size_t *enums_count, proto_enum_t *protoenum);
-proto_msg_t *proto_create_message(const char *name, int spec_index, int unique_idx, const char *comment_fmt, char *src, const int line);
+proto_msg_t *proto_create_message(const char *name, int spec_index, int unique_idx, const char *comment_fmt, char *src, const int line, const int isConstant);
 proto_msg_oneof_t *proto_create_msg_oneof(const char *name, const char *comment_fmt, char *src, const int line);
 proto_msg_def_t *proto_create_msg_elem(const char *name, const char *type, const char *rules);
 void proto_msg_add_param(proto_msg_t *msg, proto_param_t *param);

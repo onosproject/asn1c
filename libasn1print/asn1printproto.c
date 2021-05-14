@@ -214,7 +214,7 @@ asn1print_expr_proto(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *expr,
 		switch (expr->expr_type) {
 		case ASN_BASIC_INTEGER:
 			msg = proto_create_message(expr->Identifier, expr->spec_index, expr->_type_unique_index,
-					"constant Integer from %s:%d", mod->source_file_name, expr->_lineno);
+					"constant Integer from %s:%d", mod->source_file_name, expr->_lineno, 1);
 			msgelem = proto_create_msg_elem("value", "int32", NULL);
 			sprintf(msgelem->rules, "int32.const = %d", (int)expr->value->value.v_integer);
 			proto_msg_add_elem(msg, msgelem);
@@ -223,7 +223,7 @@ asn1print_expr_proto(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *expr,
 			return 0;
 		case ASN_BASIC_RELATIVE_OID:
 			msg = proto_create_message(expr->Identifier, expr->spec_index, expr->_type_unique_index,
-					"constant Basic OID from %s:%d", mod->source_file_name, expr->_lineno);
+					"constant Basic OID from %s:%d", mod->source_file_name, expr->_lineno, 1);
 			msgelem = proto_create_msg_elem("value", "string", NULL);
 			sprintf(msgelem->rules, "string.const = '%s'", asn1f_printable_value(expr->value));
 			proto_msg_add_elem(msg, msgelem);
@@ -232,7 +232,7 @@ asn1print_expr_proto(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *expr,
 			break;
 		case ASN_BASIC_OCTET_STRING:
 			msg = proto_create_message(expr->Identifier, expr->spec_index, expr->_type_unique_index,
-					"constant Basic OCTET STRING from %s:%d", mod->source_file_name, expr->_lineno);
+					"constant Basic OCTET STRING from %s:%d", mod->source_file_name, expr->_lineno, 1);
 			msgelem = proto_create_msg_elem("value", "bytes", NULL);
 			char *byte_string = NULL;
 			switch (expr->value->type) {
@@ -250,7 +250,7 @@ asn1print_expr_proto(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *expr,
 			break;
 		case A1TC_REFERENCE:
 			msg = proto_create_message(expr->Identifier, expr->spec_index, expr->_type_unique_index,
-					"reference from %s:%d", mod->source_file_name, expr->_lineno);
+					"reference from %s:%d", mod->source_file_name, expr->_lineno, 0);
 			msgelem = proto_create_msg_elem("value", "int32", NULL);
 
 			for(size_t cc = 0; cc < expr->reference->comp_count; cc++) {
@@ -288,7 +288,7 @@ asn1print_expr_proto(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *expr,
 		}
 	} else if (expr->expr_type == ASN_BASIC_INTEGER && expr->meta_type == AMT_VALUESET) {
 		proto_msg_t *msg = proto_create_message(expr->Identifier, expr->spec_index, expr->_type_unique_index,
-				"range of Integer from %s:%d", mod->source_file_name, expr->_lineno);
+				"range of Integer from %s:%d", mod->source_file_name, expr->_lineno, 0);
 		proto_msg_def_t *msgelem = proto_create_msg_elem("value", "int32", NULL);
 		char *constraints = proto_constraint_print(expr->constraints, flags);
 		sprintf(msgelem->rules, "int32 = {in: [%s]}", constraints);
@@ -303,7 +303,7 @@ asn1print_expr_proto(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *expr,
 			expr->expr_type != ASN_CONSTR_CHOICE) {
 
 		proto_msg_t *msg = proto_create_message(expr->Identifier, expr->spec_index, expr->_type_unique_index,
-				"range of Integer from %s:%d", mod->source_file_name, expr->_lineno);
+				"range of Integer from %s:%d", mod->source_file_name, expr->_lineno, 0);
 		if (expr->lhs_params != NULL) {
 			char *param_comments = proto_extract_params(msg, expr);
 			strcat(msg->comments, param_comments);
@@ -346,7 +346,7 @@ asn1print_expr_proto(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *expr,
 	    		(expr->expr_type == ASN_CONSTR_SEQUENCE ||
                     expr->expr_type == ASN_CONSTR_SEQUENCE_OF)) {
 		proto_msg_t *msg = proto_create_message(expr->Identifier, expr->spec_index, expr->_type_unique_index,
-				"sequence from %s:%d", mod->source_file_name, expr->_lineno);
+				"sequence from %s:%d", mod->source_file_name, expr->_lineno, 0);
 		if (expr->lhs_params != NULL) {
 			char *param_comments = proto_extract_params(msg, expr);
 			strcat(msg->comments, param_comments);
@@ -358,7 +358,7 @@ asn1print_expr_proto(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *expr,
 
     } else if (expr->meta_type == AMT_TYPE && expr->expr_type == ASN_CONSTR_CHOICE) {
         proto_msg_t *msg = proto_create_message(expr->Identifier, expr->spec_index, expr->_type_unique_index,
-                                                "sequence from %s:%d", mod->source_file_name, expr->_lineno);
+                                                "sequence from %s:%d", mod->source_file_name, expr->_lineno, 0);
 
         // TODO: Determine if comments should belong to the oneof or to the parent message.
         if (expr->lhs_params != NULL) {
@@ -381,7 +381,7 @@ asn1print_expr_proto(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *expr,
 
 	} else if (expr->meta_type == AMT_TYPEREF) {
 		proto_msg_t *msg = proto_create_message(expr->Identifier, expr->spec_index, expr->_type_unique_index,
-				"reference from %s:%d", mod->source_file_name, expr->_lineno);
+				"reference from %s:%d", mod->source_file_name, expr->_lineno, 0);
 		if (expr->lhs_params != NULL) {
 			char *param_comments = proto_extract_params(msg, expr);
 			strcat(msg->comments, param_comments);
@@ -440,13 +440,22 @@ proto_process_children(asn1p_expr_t *expr, proto_msg_t *msgdef, int repeated) {
 		TQ_FOR(se, &(expr->members), next) {
 			proto_msg_def_t *elem = proto_create_msg_elem(se->Identifier, "int32", NULL);
             elem->repeated = repeated;
+            elem->marker = se->marker.flags;
 			if (se->expr_type == ASN_BASIC_BIT_STRING) {
 				strcpy(elem->type, "BitString");
 			} else if (se->expr_type == ASN_BASIC_OBJECT_IDENTIFIER) {
 				strcpy(elem->type, "BasicOid");
 			} else if (se->expr_type == ASN_BASIC_BOOLEAN) {
 				strcpy(elem->type, "bool");
+			} else if (se->expr_type == ASN_BASIC_OCTET_STRING) {
+				strcpy(elem->type, "bytes");
+				if (se->constraints != NULL) {
+					char *constraint = proto_constraint_print(se->constraints, APF_REPEATED_VALUE);
+					sprintf(elem->rules, "bytes.len = %s", constraint);
+					free(constraint);
+				}
 			} else if (se->expr_type == ASN_STRING_UTF8String ||
+					se->expr_type == ASN_STRING_PrintableString ||
 					se->expr_type == ASN_STRING_TeletexString) {
 				strcpy(elem->type, "string");
 				if (se->constraints != NULL) {
@@ -471,6 +480,27 @@ proto_process_children(asn1p_expr_t *expr, proto_msg_t *msgdef, int repeated) {
 					fprintf(stderr, "unhandled expr_type: %d and meta_type: %d in %s:%s \n",
 							se->expr_type, se->meta_type, expr->Identifier, se->Identifier);
 				}
+// TODO: Finish this so that it works on 41-int-optional
+//			} else if (se->meta_type == AMT_TYPE && se->expr_type == ASN_CONSTR_SEQUENCE) {
+//				if (se->constraints != NULL) {
+//					char *constraint = proto_constraint_print(se->constraints, APF_REPEATED_VALUE);
+//					sprintf(elem->rules, "repeated = {%s}", constraint);
+//					free(constraint);
+//				}
+//				se2 = TQ_FIRST(&se->members); // Find the type
+//				if (se2->expr_type == A1TC_REFERENCE && se2->meta_type == AMT_TYPEREF) {
+//					if (se2->reference->comp_count == 1) {
+//						struct asn1p_ref_component_s *comp = se2->reference->components;
+//						strcpy(elem->type, comp->name);
+//					}
+//				} else if (se2->meta_type == AMT_TYPE) {
+//					proto_process_children(se, msgdef, 0);
+//					fprintf(stderr, "recursing expr_type: %d and meta_type: %d in %s:%s \n",
+//							se2->expr_type, se2->meta_type, se->Identifier, se2->Identifier);
+//				} else {
+//					fprintf(stderr, "unhandled expr_type: %d and meta_type: %d in %s:%s \n",
+//							se->expr_type, se->meta_type, expr->Identifier, se->Identifier);
+//				}
 			} else if (se->expr_type == A1TC_REFERENCE && se->meta_type == AMT_TYPEREF) {
 				if (se->constraints &&
 						se->constraints->type == ACT_CA_SET) {
@@ -511,6 +541,8 @@ proto_process_children(asn1p_expr_t *expr, proto_msg_t *msgdef, int repeated) {
 				}
 			} else if (se->expr_type == A1TC_UNIVERVAL) { // for enum values
 				continue;
+			} else {
+				// fprintf(stderr, "Unexpected type %d %d\n", se->expr_type, se->meta_type);
 			}
 			if(se->expr_type == A1TC_EXTENSIBLE) {
 				extensible = 1;
@@ -751,7 +783,7 @@ asn1extract_columns(asn1p_expr_t *expr, proto_msg_t **proto_msgs, size_t *proto_
 	strcat(msgname, "_");
 	strcat(msgname, expr->Identifier);
 
-	proto_msg_t *new_proto_msg = proto_create_message(msgname, expr->spec_index, expr->_type_unique_index, comment, mod_file, expr->_lineno);
+	proto_msg_t *new_proto_msg = proto_create_message(msgname, expr->spec_index, expr->_type_unique_index, comment, mod_file, expr->_lineno, 0);
 
 	int rowIdx = 0;
 	int colIdx = 0;
@@ -761,7 +793,7 @@ asn1extract_columns(asn1p_expr_t *expr, proto_msg_t **proto_msgs, size_t *proto_
 		asn1p_ioc_row_t *table_row = expr->ioc_table->row[rowIdx];
 		if (expr->ioc_table->rows > 1) {
 			sprintf(msgname, "%s%03d", expr->Identifier, rowIdx+1);
-			submsg = proto_create_message(msgname, -1, 0, NULL, mod_file, expr->_lineno);
+			submsg = proto_create_message(msgname, -1, 0, NULL, mod_file, expr->_lineno, 0);
 			proto_msg_add_nested(new_proto_msg, submsg);
 		}
 		for (colIdx = 0; colIdx < (int)table_row->columns; colIdx++) {

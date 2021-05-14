@@ -98,7 +98,7 @@ proto_create_msg_oneof(const char *name, const char *comment_fmt, char *src, con
 }
 
 proto_msg_t *
-proto_create_message(const char *name, int spec_index, int unique_idx, const char *comment_fmt, char *src, const int line) {
+proto_create_message(const char *name, int spec_index, int unique_idx, const char *comment_fmt, char *src, const int line, const int isConstant) {
 	proto_msg_t *msg = malloc(sizeof(proto_msg_t));
 	memset(msg, 0, sizeof(proto_msg_t));
 	if (spec_index > -1) {
@@ -113,6 +113,7 @@ proto_create_message(const char *name, int spec_index, int unique_idx, const cha
 	msg->entries = 0;
 	msg->nested = calloc(0, sizeof(proto_msg_t *));
 	msg->nesteds = 0;
+	msg->isConstant = isConstant;
 	return msg;
 }
 

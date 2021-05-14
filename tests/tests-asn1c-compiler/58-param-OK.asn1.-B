@@ -11,21 +11,24 @@ import "validate/v1/validate.proto";
 
 // sequence from 58-param-OK.asn1:15
 // Param INTEGER:maxSize
+// {DirectoryString001}
 message DirectoryString001 {
     // choice from 58-param-OK.asn1:15
     oneof directory_string {
-        string teletex_string = 1 [(validate.v1.rules).string = {min_len: 1, max_len: 128}];
-        string utf8_string = 2 [(validate.v1.rules).string = {min_len: 1, max_len: 128}];
+        string teletex_string = 1 [(validate.v1.rules).string = {min_len: 1, max_len: 128}, json_name="teletexString"];
+        string utf8_string = 2 [(validate.v1.rules).string = {min_len: 1, max_len: 128}, json_name="utf8String"];
     }
 };
 
 // reference from 58-param-OK.asn1:19
+// {DS1}
 message Ds1 {
-    DirectoryString001 value = 1;
+    DirectoryString001 value = 1 [ json_name="value"];
 };
 
 // constant Integer from 58-param-OK.asn1:21
+// {-}
 message UbName {
-    int32 value = 1 [(validate.v1.rules).int32.const = 128];
+    int32 value = 1 [(validate.v1.rules).int32.const = 128, json_name="value"];
 };
 

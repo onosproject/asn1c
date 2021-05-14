@@ -11,23 +11,27 @@ import "pkg13a_resolver_ok_asn1/v1/moduletestresolver2.proto"; // { iso org(3) d
 import "validate/v1/validate.proto";
 
 // reference from 13a-resolver-OK.asn1:20
+// {alpha}
 message Alpha {
-    int32 value = 1 [(validate.v1.rules).int32.const = 123]; // IntegerType
+    int32 value = 1 [(validate.v1.rules).int32.const = 123, json_name="value"]; // IntegerType
 };
 
 // reference from 13a-resolver-OK.asn1:21
+// {alpha2}
 message Alpha2 {
-    int32 value = 1 [(validate.v1.rules).int32.const = 123]; // ModuleTestResolver2.IntegerType
+    int32 value = 1 [(validate.v1.rules).int32.const = 123, json_name="value"]; // ModuleTestResolver2.IntegerType
 };
 
 // constant Integer from 13a-resolver-OK.asn1:29
+// {-}
 message CheckAlpha {
-    int32 value = 1 [(validate.v1.rules).int32.const = 123];
+    int32 value = 1 [(validate.v1.rules).int32.const = 123, json_name="value"];
 };
 
 // constant Integer from 13a-resolver-OK.asn1:30
+// {-}
 message CheckAlpha2 {
-    int32 value = 1 [(validate.v1.rules).int32.const = 123];
+    int32 value = 1 [(validate.v1.rules).int32.const = 123, json_name="value"];
 };
 
 
@@ -43,17 +47,20 @@ option go_package = "pkg13a_resolver_ok_asn1/v1/moduletestresolver2";
 import "validate/v1/validate.proto";
 
 // reference from 13a-resolver-OK.asn1:41
+// {beta}
 message Beta {
-    int32 value = 1 [(validate.v1.rules).int32.const = 123]; // HiddenType
+    int32 value = 1 [(validate.v1.rules).int32.const = 123, json_name="value"]; // HiddenType
 };
 
 // range of Integer from 13a-resolver-OK.asn1:45
+// {HiddenType}
 message HiddenType {
-    int32 value = 1;
+    int32 value = 1 [ json_name="value"];
 };
 
 // range of Integer from 13a-resolver-OK.asn1:47
+// {IntegerType}
 message IntegerType {
-    int32 value = 1;
+    int32 value = 1 [ json_name="value"];
 };
 

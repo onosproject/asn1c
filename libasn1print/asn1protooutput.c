@@ -192,6 +192,15 @@ proto_print_comments(char *comments) {
 }
 
 static void
+proto_print_msgname_original(char *name, const int isConstant) {
+	if (isConstant) {
+	   safe_printf("// {-}\n");
+	   return;
+	}
+    safe_printf("// {%s}\n", name);
+}
+
+static void
 proto_print_oid(asn1p_oid_t *oid) {
 	int ac;
 
@@ -232,8 +241,15 @@ print_entries(proto_msg_def_t **entry, size_t entries,
         free(typePc);
         free(nameLsc);
         if (strlen(proto_msg_def->rules) > 0) {
-            safe_printf(" [(validate.v1.rules).%s]", proto_msg_def->rules);
+            safe_printf(" [(validate.v1.rules).%s,", proto_msg_def->rules);
+        } else {
+            safe_printf(" [");
         }
+        safe_printf(" json_name=\"%s", proto_msg_def->name);
+        if (proto_msg_def->marker & 0x4) {
+            safe_printf(":OPTIONAL");
+        }
+        safe_printf("\"]");
         if (strlen(proto_msg_def->comments) > 0) {
             safe_printf("; // %s\n", proto_msg_def->comments);
         } else {
@@ -296,6 +312,7 @@ proto_print_single_msg(proto_msg_t *proto_msg,
 	if (strlen(proto_msg->comments)) {
 		proto_print_comments(proto_msg->comments);
 	}
+	proto_print_msgname_original(proto_msg->name, proto_msg->isConstant);
 
 	char *namePc = toPascalCaseDup(proto_msg->name);
 	INDENT("message %s {\n", namePc);
