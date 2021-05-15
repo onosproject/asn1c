@@ -10,37 +10,44 @@ option go_package = "pkg10_int_ok_asn1/v1/moduletestint4";
 import "validate/v1/validate.proto";
 
 // constant Integer from 10-int-OK.asn1:14
+// {-}
 message Alpha {
-    int32 value = 1 [(validate.v1.rules).int32.const = 1];
+    int32 value = 1 [(validate.v1.rules).int32.const = 1, json_name="value"];
 };
 
 // range of Integer from 10-int-OK.asn1:15
+// {Type1}
 message Type1 {
-    int32 value = 1;
+    int32 value = 1 [ json_name="value"];
 };
 
 // range of Integer from 10-int-OK.asn1:16
+// {Type2}
 message Type2 {
-    int32 value = 1;
+    int32 value = 1 [ json_name="value"];
 };
 
 // reference from 10-int-OK.asn1:17
+// {gamma}
 message Gamma {
-    int32 value = 1 [(validate.v1.rules).int32.const = 1]; // Type2
+    int32 value = 1 [(validate.v1.rules).int32.const = 1, json_name="value"]; // Type2
 };
 
 // reference from 10-int-OK.asn1:18
+// {delta}
 message Delta {
-    int32 value = 1 [(validate.v1.rules).int32.const = 3]; // Type2
+    int32 value = 1 [(validate.v1.rules).int32.const = 3, json_name="value"]; // Type2
 };
 
 // constant Integer from 10-int-OK.asn1:26
+// {-}
 message CheckGamma {
-    int32 value = 1 [(validate.v1.rules).int32.const = 1];
+    int32 value = 1 [(validate.v1.rules).int32.const = 1, json_name="value"];
 };
 
 // constant Integer from 10-int-OK.asn1:27
+// {-}
 message CheckDelta {
-    int32 value = 1 [(validate.v1.rules).int32.const = 3];
+    int32 value = 1 [(validate.v1.rules).int32.const = 3, json_name="value"];
 };
 

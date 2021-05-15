@@ -10,37 +10,42 @@ option go_package = "pkg18a_class_ok_asn1/v1/moduletestclass";
 import "validate/v1/validate.proto";
 
 // sequence from 18a-class-OK.asn1:14
+// {Pair}
 message Pair {
-    int32 a = 1;
-    int32 b = 2;
+    int32 a = 1 [ json_name="a"];
+    int32 b = 2 [ json_name="b"];
 };
 
 // concrete instance(s) of class FUNCTION from 18a-class-OK.asn1:31
+// {_operator-plus}
 message OperatorPlus {
-    int32 code = 1 [(validate.v1.rules).int32.const = 1];
-    Pair arg_type = 2;
-    int32 result_type = 3;
+    int32 code = 1 [(validate.v1.rules).int32.const = 1, json_name="&code"];
+    Pair arg_type = 2 [ json_name="&ArgType"];
+    int32 result_type = 3 [ json_name="&ResultType"];
 };
 
 // concrete instance(s) of class FUNCTION from 18a-class-OK.asn1:38
+// {_operator-square}
 message OperatorSquare {
-    int32 code = 1 [(validate.v1.rules).int32.const = 2];
-    int32 arg_type = 2;
-    int32 result_type = 3;
+    int32 code = 1 [(validate.v1.rules).int32.const = 2, json_name="&code"];
+    int32 arg_type = 2 [ json_name="&ArgType"];
+    int32 result_type = 3 [ json_name="&ResultType"];
 };
 
 // concrete instance(s) of class FUNCTION from 18a-class-OK.asn1:45
+// {_operator-root}
 message OperatorRoot {
-    int32 code = 1 [(validate.v1.rules).int32.const = 3];
-    int32 arg_type = 2;
-    int32 unused = 3;
-    float result_type = 4;
+    int32 code = 1 [(validate.v1.rules).int32.const = 3, json_name="&code"];
+    int32 arg_type = 2 [ json_name="&ArgType"];
+    int32 unused = 3 [ json_name="&Unused"];
+    float result_type = 4 [ json_name="&ResultType"];
 };
 
 // concrete instance(s) of class FUNCTION from 18a-class-OK.asn1:53
+// {_Functions}
 message Functions {
-    OperatorPlus operator_plus = 1;
-    OperatorSquare operator_square = 2;
-    OperatorRoot operator_root = 3;
+    OperatorPlus operator_plus = 1 [ json_name="operator_plus"];
+    OperatorSquare operator_square = 2 [ json_name="operator_square"];
+    OperatorRoot operator_root = 3 [ json_name="operator_root"];
 };
 
