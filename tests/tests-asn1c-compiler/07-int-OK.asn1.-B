@@ -8,10 +8,12 @@ package pkg07_int_ok_asn1.v1;
 option go_package = "pkg07_int_ok_asn1/v1/moduletestint1";
 
 import "validate/v1/validate.proto";
+import "asn1/v1/asn1.proto";
 
 // constant Integer from 07-int-OK.asn1:14
 // {-}
 message Int123456 {
+    // @inject_tag: aper:"valueLB:123456,valueUB:123456,"
     int32 value = 1 [(validate.v1.rules).int32.const = 123456, json_name="value"];
 };
 

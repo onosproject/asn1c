@@ -9,6 +9,7 @@ option go_package = "pkg16a_constraint_ok_asn1/v1/moduletestconstraint1";
 
 import "pkg16a_constraint_ok_asn1/v1/moduletestconstraint2.proto";
 import "validate/v1/validate.proto";
+import "asn1/v1/asn1.proto";
 
 // range of Integer from 16a-constraint-OK.asn1:17
 // {Type0}
@@ -43,6 +44,7 @@ package pkg16a_constraint_ok_asn1.v1;
 option go_package = "pkg16a_constraint_ok_asn1/v1/moduletestconstraint2";
 
 import "validate/v1/validate.proto";
+import "asn1/v1/asn1.proto";
 
 // range of Integer from 16a-constraint-OK.asn1:39
 // {Type1}
@@ -77,6 +79,7 @@ message Type5 {
 // constant Integer from 16a-constraint-OK.asn1:45
 // {-}
 message Ten {
+    // @inject_tag: aper:"valueLB:10,valueUB:10,"
     int32 value = 1 [(validate.v1.rules).int32.const = 10, json_name="value"];
 };
 

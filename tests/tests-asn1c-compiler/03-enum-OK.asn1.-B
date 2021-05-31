@@ -8,6 +8,7 @@ package pkg03_enum_ok_asn1.v1;
 option go_package = "pkg03_enum_ok_asn1/v1/moduletestenum1";
 
 import "validate/v1/validate.proto";
+import "asn1/v1/asn1.proto";
 
 // enumerated from 03-enum-OK.asn1:15
 enum Enum1 {

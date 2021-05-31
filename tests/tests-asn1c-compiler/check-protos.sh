@@ -33,6 +33,8 @@ for ref in ${top_srcdir}/tests/tests-asn1c-compiler/*.asn1.-B; do
 	refdir=${top_builddir}/tests/tests-asn1c-compiler/${baseref/%".asn1.-B"/""}
 	mkdir -p ${refdir}/validate/v1
 	cp ${top_srcdir}/tests/tests-asn1c-compiler/validate.proto ${refdir}/validate/v1
+	mkdir -p ${refdir}/asn1/v1
+	cp ${top_srcdir}/tests/tests-asn1c-compiler/asn1.proto ${refdir}/asn1/v1
 	for refproto in ${top_builddir}/tests/tests-asn1c-compiler/${reffilename}*.proto; do
 		newname=`head -n 1 ${refproto} | grep '\w.proto' | awk 'BEGIN { FS = " "}; { print $2 }'`
 		newname=${newname//-/_}
@@ -44,6 +46,7 @@ for ref in ${top_srcdir}/tests/tests-asn1c-compiler/*.asn1.-B; do
 	done
 
 	cat << EOF > ${refdir}/buf.yaml
+version: v1beta1
 lint:
   use:
     - DEFAULT
@@ -52,14 +55,14 @@ lint:
     - ENUM_ZERO_VALUE_SUFFIX
     - PACKAGE_SAME_GO_PACKAGE
 EOF
-
+	cd ${refdir}
 	ec=0
-	buf check lint --input ${refdir} || ec=$?
+	buf lint || ec=$?
 	if [ $ec != 0 ]; then
 		LAST_FAILED="${refdir} (from $src)"
 		finalExitCode=$ec
 	fi
-
+	cd ..
 	if [ $cleanup == 1 ]; then
 		rm -rf ${refdir}
 	fi

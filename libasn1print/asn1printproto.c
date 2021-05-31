@@ -217,6 +217,8 @@ asn1print_expr_proto(asn1p_t *asn, asn1p_module_t *mod, asn1p_expr_t *expr,
 					"constant Integer from %s:%d", mod->source_file_name, expr->_lineno, 1);
 			msgelem = proto_create_msg_elem("value", "int32", NULL);
 			sprintf(msgelem->rules, "int32.const = %d", (int)expr->value->value.v_integer);
+			msgelem->tags.valueLB = (int)expr->value->value.v_integer;
+			msgelem->tags.valueUB = (int)expr->value->value.v_integer;
 			proto_msg_add_elem(msg, msgelem);
 			proto_messages_add_msg(message, messages, msg);
 
@@ -439,10 +441,10 @@ proto_process_children(asn1p_expr_t *expr, proto_msg_t *msgdef, int repeated) {
 //			dont_involve_children = 1;
 		TQ_FOR(se, &(expr->members), next) {
 			proto_msg_def_t *elem = proto_create_msg_elem(se->Identifier, "int32", NULL);
-            elem->repeated = repeated;
+            elem->tags.repeated = repeated;
             elem->marker = se->marker.flags;
 			if (se->expr_type == ASN_BASIC_BIT_STRING) {
-				strcpy(elem->type, "BitString");
+				strcpy(elem->type, "asn1.v1.BitString");
 			} else if (se->expr_type == ASN_BASIC_OBJECT_IDENTIFIER) {
 				strcpy(elem->type, "BasicOid");
 			} else if (se->expr_type == ASN_BASIC_BOOLEAN) {
@@ -464,7 +466,7 @@ proto_process_children(asn1p_expr_t *expr, proto_msg_t *msgdef, int repeated) {
 					free(constraint);
 				}
 			} else if (se->meta_type == AMT_TYPE && se->expr_type == ASN_CONSTR_SEQUENCE_OF) {
-				elem->repeated = 1;
+				elem->tags.repeated = 1;
 				if (se->constraints != NULL) {
 					char *constraint = proto_constraint_print(se->constraints, APF_REPEATED_VALUE);
 					sprintf(elem->rules, "repeated = {%s}", constraint);

@@ -121,6 +121,8 @@ proto_msg_def_t *
 proto_create_msg_elem(const char *name, const char *type, const char *rules) {
 	proto_msg_def_t *msgelem = malloc(sizeof(proto_msg_def_t));
 	memset(msgelem, 0, sizeof(proto_msg_def_t));
+	msgelem->tags.valueLB = -1;
+	msgelem->tags.sizeLB = -1;
     if (name) {
         strcpy(msgelem->name, name);
     } else {
@@ -186,4 +188,11 @@ proto_create_import(const char *path, asn1p_oid_t *oid) {
 	if (oid != NULL)
 		protoimport->oid = oid;
 	return protoimport;
+}
+
+int
+tags_sum(proto_tags_t tags) {
+	// Expecting sizeLB and valueLB to have been set to -1
+	return tags.optional + tags.sizeExt + tags.sizeLB + 1 + tags.sizeUB + tags.valueExt +
+			tags.valueLB + 1 + tags.valueUB + tags.repeated;
 }
