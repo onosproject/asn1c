@@ -8,6 +8,7 @@ package pkg58_param_ok_asn1.v1;
 option go_package = "pkg58_param_ok_asn1/v1/moduletestparam";
 
 import "validate/v1/validate.proto";
+import "asn1/v1/asn1.proto";
 
 // sequence from 58-param-OK.asn1:15
 // Param INTEGER:maxSize
@@ -29,6 +30,7 @@ message Ds1 {
 // constant Integer from 58-param-OK.asn1:21
 // {-}
 message UbName {
+    // @inject_tag: aper:"valueLB:128,valueUB:128,"
     int32 value = 1 [(validate.v1.rules).int32.const = 128, json_name="value"];
 };
 

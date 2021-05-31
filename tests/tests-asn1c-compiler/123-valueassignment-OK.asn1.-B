@@ -8,6 +8,7 @@ package pkg123_valueassignment_ok_asn1.v1;
 option go_package = "pkg123_valueassignment_ok_asn1/v1/modulevalueassignmentconstrained";
 
 import "validate/v1/validate.proto";
+import "asn1/v1/asn1.proto";
 
 // constant Basic OCTET STRING from 123-valueassignment-OK.asn1:14
 // {-}

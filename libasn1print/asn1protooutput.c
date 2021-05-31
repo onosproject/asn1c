@@ -226,12 +226,39 @@ print_entries(proto_msg_def_t **entry, size_t entries,
               enum asn1print_flags2 flags, int level, int andfree) {
     for (int i=0; i < (int)(entries); i++) {
         struct proto_msg_def_s *proto_msg_def  = entry[i];
+        if (tags_sum(proto_msg_def->tags)) {
+			INDENT("// @inject_tag: aper:\"");
+			if (proto_msg_def->tags.optional) {
+				safe_printf("optional,");
+			}
+			if (proto_msg_def->tags.valueExt == TRUE) {
+				safe_printf("valueExt,");
+			}
+			if (proto_msg_def->tags.valueLB >= 0) {
+				safe_printf("valueLB:%d,", proto_msg_def->tags.valueLB);
+			}
+			if (proto_msg_def->tags.valueUB > 0) {
+				safe_printf("valueUB:%d,", proto_msg_def->tags.valueUB);
+			}
+			if (proto_msg_def->tags.sizeExt == TRUE) {
+				safe_printf("sizeExt,");
+			}
+			if (proto_msg_def->tags.sizeLB >= 0) {
+				safe_printf("sizeLB:%d,", proto_msg_def->tags.sizeLB);
+			}
+			if (proto_msg_def->tags.sizeUB > 0) {
+				safe_printf("sizeUB:%d,", proto_msg_def->tags.sizeUB);
+			}
+			safe_printf("\"\n");
+        }
         INDENT("");
-        if (proto_msg_def->repeated > 0) {
+        if (proto_msg_def->tags.repeated == TRUE) {
             safe_printf("repeated ");
+        } else if (proto_msg_def->marker == 0x07) { // Can't put repeated and optional together
+            safe_printf("optional ");
         }
         char *typePc;
-        if (strstr(PROTOSCALARTYPES, proto_msg_def->type) != NULL) {
+        if (strstr(PROTOSCALARTYPES, proto_msg_def->type) != NULL || strcmp("asn1.v1.BitString", proto_msg_def->type) == 0) {
             typePc = strdup(proto_msg_def->type);
         } else {
             typePc = toPascalCaseDup(proto_msg_def->type);
@@ -246,9 +273,6 @@ print_entries(proto_msg_def_t **entry, size_t entries,
             safe_printf(" [");
         }
         safe_printf(" json_name=\"%s", proto_msg_def->name);
-        if (proto_msg_def->marker & 0x4) {
-            safe_printf(":OPTIONAL");
-        }
         safe_printf("\"]");
         if (strlen(proto_msg_def->comments) > 0) {
             safe_printf("; // %s\n", proto_msg_def->comments);
@@ -263,13 +287,12 @@ print_entries(proto_msg_def_t **entry, size_t entries,
 }
 
 static void
-proto_print_single_oneof(struct proto_msg_oneof_s *proto_oneof,
+proto_print_single_oneof(proto_msg_oneof_t *proto_oneof,
          enum asn1print_flags2 flags, int level, int andfree) {
     if (strlen(proto_oneof->comments)) {
         INDENT("");
         proto_print_comments(proto_oneof->comments);
     }
-
     INDENT("oneof %s {\n", toSnakeCaseDup(proto_oneof->name, SNAKECASE_LOWER));
     level++;
     print_entries(proto_oneof->entry, proto_oneof->entries, flags, level, andfree);
@@ -282,7 +305,7 @@ static char *proto_msg_serialized(proto_msg_t *message) {
 	memset(serialized, 0, PROTO_COMMENTS_CHARS * 10);
     for (int i=0; i < (int)(message->entries); i++) {
 		struct proto_msg_def_s *proto_msg_def  = message->entry[i];
-		if (proto_msg_def->repeated > 0) {
+		if (proto_msg_def->tags.repeated > 0) {
 			strcat(serialized, "repeated ");
 		}
 		char *typePc;
@@ -462,7 +485,8 @@ void proto_print_msg(proto_module_t *proto_module, enum asn1print_flags2 flags, 
 	}
 	free(sourceFileSc);
 
-	safe_printf("import \"validate/v1/validate.proto\";\n\n");
+	safe_printf("import \"validate/v1/validate.proto\";\n");
+	safe_printf("import \"asn1/v1/asn1.proto\";\n\n");
 
 	for (int i = 0; i < (int)(proto_module->enums); i++) {
 		proto_enum_t *proto_enum = proto_module->protoenum[i];

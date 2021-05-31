@@ -28,6 +28,8 @@
 #define USUAL_CLASS_IDENTIFIER_1 "&id"
 #define USUAL_CLASS_IDENTIFIER_2 "&procedureCode"
 
+#define TRUE 1
+
 typedef enum {
     PROTO_PARAM_TYPE,
     PROTO_PARAM_VALUE,
@@ -42,12 +44,23 @@ typedef struct proto_param_s {
     char name[PROTO_NAME_CHARS];
 } proto_param_t;
 
+typedef struct proto_tags_s {
+	int optional;
+	int sizeExt;
+	int sizeLB;
+	int sizeUB;
+	int valueExt;
+	int valueLB;
+	int valueUB;
+    int repeated;
+} proto_tags_t;
+
 typedef struct proto_msg_def_s {
 	char type[PROTO_TYPE_CHARS];
 	char name[PROTO_NAME_CHARS];
 	char rules[PROTO_RULES_CHARS];
 	char comments[PROTO_COMMENTS_CHARS];
-    int repeated;
+	proto_tags_t tags;
     enum asn1p_expr_marker_e marker;
 } proto_msg_def_t;
 
@@ -122,5 +135,6 @@ void proto_messages_add_msg(proto_msg_t **messages, size_t *message_count, proto
 proto_import_t *proto_create_import(const char *path, asn1p_oid_t *oid);
 char *proto_remove_rel_path(char *path);
 char *proto_remove_whole_path(char *path);
+int tags_sum(proto_tags_t tags);
 
 #endif /* LIBASN1PRINT_ASN1PROTOTYPES_H_ */

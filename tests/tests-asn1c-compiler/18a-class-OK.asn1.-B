@@ -8,6 +8,7 @@ package pkg18a_class_ok_asn1.v1;
 option go_package = "pkg18a_class_ok_asn1/v1/moduletestclass";
 
 import "validate/v1/validate.proto";
+import "asn1/v1/asn1.proto";
 
 // sequence from 18a-class-OK.asn1:14
 // {Pair}

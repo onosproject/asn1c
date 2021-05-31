@@ -8,11 +8,13 @@ package pkg39_sequence_of_ok_asn1.v1;
 option go_package = "pkg39_sequence_of_ok_asn1/v1/modulenestedsequenceof";
 
 import "validate/v1/validate.proto";
+import "asn1/v1/asn1.proto";
 
 // sequence from 39-sequence-of-OK.asn1:15
 // {T}
 message T {
     int32 int = 1 [ json_name="int"];
+    // @inject_tag: aper:""
     repeated T2 collection = 2 [ json_name="collection"];
 };
 
